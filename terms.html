@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Terms — tlocal</title>
+    <link rel="icon" href="assets/logosvg.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header-shell">
+        <div class="site-header-inner" style="display: flex; align-items: center; gap: 32px;">
+          <a class="site-logo" href="index.html">tlocal</a>
+          <nav class="site-nav" aria-label="Primary" style="display: flex; gap: 28px;">
+            <a href="index.html#features-heading">features</a>
+            <a href="index.html#workflow-heading">flow</a>
+            <a href="about.html">about</a>
+            <a
+              class="btn mono-thin"
+              href="https://calendly.com/tongfeiz-usc/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+              >book demo</a
+            >
+          </nav>
+        </div>
+      </div>
+    </header>
+    <div class="shell">
+      <main class="landing-column">
+        <article class="simple-page__article simple-page" aria-labelledby="terms-heading">
+          <p class="section-eyebrow mono-thin">legal</p>
+          <h1 id="terms-heading" class="simple-page__title">Terms of use</h1>
+          <div class="simple-page__body">
+            <p>
+              These terms govern your use of the tlocal website and related services. This is placeholder text—have it
+              reviewed by counsel before you rely on it publicly.
+            </p>
+            <h2>Acceptance</h2>
+            <p>By accessing the site or using the product, you agree to these terms and to any additional terms we provide for specific features.</p>
+            <h2>Use of the service</h2>
+            <p>
+              You agree to use tlocal only for lawful purposes and in line with any acceptable-use rules we publish.
+              You are responsible for content you submit and for maintaining the security of your accounts.
+            </p>
+            <h2>Disclaimer</h2>
+            <p>
+              The service is provided “as is” to the extent permitted by law. We may change or discontinue features
+              with reasonable notice where appropriate.
+            </p>
+            <h2>Contact</h2>
+            <p>
+              Questions about these terms: <a href="mailto:tongfeiz@usc.edu">tongfeiz@usc.edu</a>.
+            </p>
+          </div>
+        </article>
+
+        <footer class="site-footer">
+          <div class="site-footer-top">
+            <div class="site-footer-grid">
+              <div class="site-footer-col">
+                <h3 class="site-footer-heading mono-thin">[company]</h3>
+                <ul class="site-footer-links">
+                  <li><a href="about.html">About</a></li>
+                </ul>
+              </div>
+              <div class="site-footer-col">
+                <h3 class="site-footer-heading mono-thin">[legal]</h3>
+                <ul class="site-footer-links">
+                  <li><a href="privacy.html">Privacy</a></li>
+                  <li><a href="terms.html" aria-current="page">Terms</a></li>
+                </ul>
+              </div>
+              <div class="site-footer-col">
+                <h3 class="site-footer-heading mono-thin">[connect]</h3>
+                <ul class="site-footer-links">
+                  <li><a href="mailto:tongfeiz@usc.edu">Email</a></li>
+                </ul>
+              </div>
+            </div>
+            <p class="site-footer-copy mono-thin">© <span id="y"></span> tlocal</p>
+          </div>
+        </footer>
+      </main>
+    </div>
+    <script src="js/page-stagger.js" defer></script>
+    <script>
+      document.getElementById('y').textContent = String(new Date().getFullYear());
+    </script>
+  </body>
+</html>

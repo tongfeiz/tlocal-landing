@@ -4,716 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tlocal - accelerating content localization</title>
-    <style>
-      :root {
-        --fg: #1b1b1b;
-        --muted: #6b6b6b;
-        --bg: #f5f5f5;
-        --site-header-h: 52px;
-        --flow-sticky-half: 180px;
-        /* Same inset as product-demo-animation .page-demo (outer margins to the demo card) */
-        --demo-edge: max(16px, 2vmin);
-        --demo-inner-max: 1100px;
-        /** Uniform scale for embed (layout inside iframe unchanged; only the painted size shrinks) */
-        --demo-scale: 0.93;
-        --demo-iframe-h: min(704px, 92vh);
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html {
-        scroll-behavior: smooth;
-      }
-
-      main {
-        overflow: visible;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100svh;
-        font-family:
-          -apple-system,
-          BlinkMacSystemFont,
-          'SF Pro Display',
-          'SF Pro Text',
-          'Helvetica Neue',
-          Helvetica,
-          Arial,
-          sans-serif;
-        font-weight: 400;
-        color: var(--fg);
-        background: var(--bg);
-        -webkit-font-smoothing: antialiased;
-      }
-
-      .mono-thin {
-        font-family: 'SF Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
-        font-weight: 200;
-        letter-spacing: 0.06em;
-        text-transform: lowercase;
-      }
-
-      .site-header {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        font-family: 'SF Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
-        background: rgba(245, 245, 245, 0.86);
-        backdrop-filter: saturate(180%) blur(14px);
-        -webkit-backdrop-filter: saturate(180%) blur(14px);
-        border-bottom: 1px solid rgba(27, 27, 27, 0.06);
-      }
-
-      /* Same horizontal frame as .shell — edge inset matches main content */
-      .site-header-shell {
-        max-width: calc(var(--demo-inner-max) + 2 * var(--demo-edge));
-        margin: 0 auto;
-        padding: 0 var(--demo-edge);
-      }
-
-      /* Same width as .landing-column so logo/nav align with hero + demo */
-      .site-header-inner {
-        max-width: min(calc(var(--demo-inner-max) * var(--demo-scale)), 100%);
-        margin: 0 auto;
-        padding: 12px 0;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px 20px;
-      }
-
-      .site-logo {
-        color: var(--fg);
-        text-decoration: none;
-        font-size: 14px;
-        line-height: 1.2;
-        font-weight: 200;
-        letter-spacing: 0.06em;
-        text-transform: lowercase;
-      }
-
-      .site-logo:hover {
-        opacity: 0.72;
-      }
-
-      .site-logo:focus-visible {
-        outline: 2px solid rgba(27, 27, 27, 0.35);
-        outline-offset: 3px;
-        border-radius: 2px;
-      }
-
-      .site-nav {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 6px 18px;
-      }
-
-      .site-nav a:not(.btn) {
-        font-size: 13px;
-        font-weight: 400;
-        color: var(--muted);
-        text-decoration: none;
-        letter-spacing: 0.05em;
-        text-transform: lowercase;
-      }
-
-      .site-nav a:not(.btn):hover {
-        color: var(--fg);
-      }
-
-      .site-nav a:not(.btn):focus-visible {
-        outline: 2px solid rgba(27, 27, 27, 0.35);
-        outline-offset: 3px;
-        border-radius: 2px;
-      }
-
-      .site-header .btn {
-        padding: 8px 14px;
-        font-size: 13px;
-        font-weight: 400;
-        letter-spacing: 0.04em;
-        text-transform: lowercase;
-        color: var(--bg);
-        background: var(--fg);
-        border-color: var(--fg);
-      }
-
-      .site-header .btn:hover {
-        background: #2e2e2e;
-        border-color: #2e2e2e;
-        color: var(--bg);
-      }
-
-      .site-header .btn:active {
-        color: var(--bg);
-      }
-
-      #features-heading,
-      #workflow-heading,
-      #cta-heading {
-        scroll-margin-top: 88px;
-      }
-
-      /* Same horizontal bounds as .page-demo + min(1100px) viewport (see product-demo-animation.html) */
-      .shell {
-        max-width: calc(var(--demo-inner-max) + 2 * var(--demo-edge));
-        margin: 0 auto;
-        padding: clamp(36px, 9vw, 96px) var(--demo-edge) clamp(48px, 10vw, 96px);
-        overflow: visible;
-      }
-
-      /*
-       * Column width = scaled demo visual width (no dead band beside the video).
-       * iframe uses layout width 100%/scale then transform: scale() so the painted demo fills this column edge-to-edge.
-       */
-      .landing-column {
-        max-width: min(calc(var(--demo-inner-max) * var(--demo-scale)), 100%);
-        width: 100%;
-        margin-inline: auto;
-        overflow: visible;
-      }
-
-      .landing-intro {
-        width: 100%;
-        text-align: left;
-      }
-
-      .hero-text-column {
-        display: block;
-        width: 100%;
-        text-align: left;
-        margin-top: 5vh;
-      }
-
-      .eyebrow {
-        margin: 0 0 5px;
-        font-size: 13px;
-        color: var(--muted);
-      }
-
-      h1 {
-        margin: 0 0 20px;
-        font-size: clamp(1.75rem, 4.2vw, 2.75rem);
-        font-weight: 600;
-        letter-spacing: -0.04em;
-        line-height: 1.32;
-        max-width: 18ch;
-      }
-
-      .hero-text-column h1 {
-        max-width: none;
-        white-space: nowrap;
-      }
-
-      @media (max-width: 560px) {
-        .hero-text-column h1 {
-          white-space: normal;
-        }
-      }
-
-      .landing-below {
-        margin-top: clamp(20px, 6vw, 72px);
-        padding-top: clamp(32px, 2vw, 56px);
-        overflow: visible;
-      }
-
-      .section-block + .section-block {
-        margin-top: clamp(56px, 9vw, 88px);
-      }
-
-      .flow-section + .cta-section {
-        margin-top: clamp(88px, 14vw, 140px);
-      }
-
-      .section-eyebrow {
-        margin: 0 0 10px;
-        font-size: 13px;
-        color: var(--muted);
-      }
-
-      h2.section-title {
-        margin: 0 0 14px;
-        font-size: clamp(1.35rem, 2.8vw, 1.65rem);
-        font-weight: 600;
-        letter-spacing: -0.03em;
-        line-height: 1.25;
-      }
-
-      .section-lede {
-        margin: 0 0 clamp(28px, 5vw, 40px);
-        font-size: 15px;
-        line-height: 1.6;
-        color: var(--muted);
-        max-width: 52ch;
-      }
-
-      /* Body copy: SF Mono (matches nav / labels) */
-      .lede,
-      .section-lede,
-      .feature-card p,
-      .flow-steps li p {
-        font-family: 'SF Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
-        letter-spacing: -0.02em;
-      }
-
-      .workspace-section .feature-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: clamp(14px, 2.5vw, 18px);
-        min-width: 0;
-      }
-
-      .workspace-section .feature-card {
-        padding: clamp(18px, 3vw, 22px);
-        background: transparent;
-        border: 1px solid rgba(27, 27, 27, 0.1);
-        border-radius: 14px;
-        box-shadow: none;
-      }
-
-      .feature-card-thumb {
-        display: block;
-        width: 100%;
-        height: auto;
-        margin: 0 0 12px;
-        border-radius: 8px;
-        object-fit: cover;
-        aspect-ratio: 16 / 10;
-        background: rgba(27, 27, 27, 0.04);
-      }
-
-      .feature-card h3 {
-        margin: 0 0 10px;
-        font-size: 15px;
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        line-height: 1.3;
-      }
-
-      .feature-card p {
-        margin: 0;
-        font-size: 14px;
-        line-height: 1.55;
-        color: var(--muted);
-      }
-
-      .feature-card p + p {
-        margin-top: 0.85em;
-      }
-
-      .steps {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        display: grid;
-        gap: clamp(18px, 3vw, 24px);
-        counter-reset: step;
-      }
-
-      .steps li {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 16px 18px;
-        align-items: start;
-        padding-bottom: clamp(18px, 3vw, 22px);
-        border-bottom: 1px solid rgba(27, 27, 27, 0.06);
-      }
-
-      .steps li:last-child {
-        padding-bottom: 0;
-        border-bottom: 0;
-      }
-
-      .step-num {
-        font-family: 'SF Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
-        font-weight: 200;
-        font-size: 12px;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-        padding-top: 3px;
-      }
-
-      .steps li strong {
-        display: block;
-        font-size: 15px;
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        margin-bottom: 6px;
-        color: var(--fg);
-      }
-
-      .steps li p {
-        margin: 0;
-        font-size: 14px;
-        line-height: 1.55;
-        color: var(--muted);
-      }
-
-      /* Flow & workspace: left column sticky; flow track height from JS */
-      .flow-section,
-      .workspace-section {
-        overflow: visible;
-      }
-
-      .flow-pin-track {
-        position: relative;
-        overflow: visible;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .flow-pin-row {
-        display: grid;
-        grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-        gap: clamp(32px, 5vw, 56px);
-        align-items: stretch;
-        width: 100%;
-        min-height: 0;
-        flex: 1 1 auto;
-        background: var(--bg);
-      }
-
-      .flow-col--left {
-        min-width: 0;
-        min-height: 0;
-        height: 100%;
-        align-self: stretch;
-      }
-
-      .flow-visual-sticky {
-        position: -webkit-sticky;
-        position: sticky;
-        /* Prefer vertical center; never underlap the fixed header */
-        top: max(var(--site-header-h, 52px), calc(50vh - var(--flow-sticky-half, 180px)));
-        z-index: 5;
-        width: 100%;
-        max-width: 100%;
-      }
-
-      .flow-col--right {
-        min-width: 0;
-      }
-
-      /* Scroll-linked fade: mask updated from JS to match left column (eyebrow → placeholder) */
-      .flow-steps-wrap {
-        min-width: 0;
-        -webkit-mask-size: 100% 100%;
-        mask-size: 100% 100%;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-      }
-
-      .flow-visual-col {
-        min-width: 0;
-      }
-
-      .flow-visual-col .section-title {
-        max-width: 20ch;
-      }
-
-      .flow-visual-col .section-lede {
-        max-width: 38ch;
-      }
-
-      .flow-placeholder-frame {
-        margin: clamp(20px, 4vw, 32px) 0 0;
-        border-radius: 10px;
-        border: 1px solid rgba(27, 27, 27, 0.08);
-        background: #fff;
-        aspect-ratio: 5 / 3;
-        max-width: 84%;
-      }
-
-      .flow-section .flow-steps li:first-child {
-        padding-top: 0;
-      }
-
-      .flow-section .flow-steps li:first-child .step-num {
-        padding-top: 0;
-      }
-
-      .flow-steps {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-      }
-
-      .flow-steps li {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 10px 16px;
-        align-items: start;
-        /* Tighter rhythm so ~4 steps fit the left-column “window” (eyebrow → placeholder) */
-        padding: clamp(12px, 2vw, 18px) 0;
-        border-bottom: 1px solid rgba(27, 27, 27, 0.06);
-      }
-
-      .flow-steps li:last-child {
-        border-bottom: 0;
-      }
-
-      .flow-steps .step-num {
-        padding-top: 3px;
-        font-size: 13px;
-      }
-
-      .flow-steps li strong {
-        display: block;
-        font-size: 16px;
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        margin-bottom: 6px;
-        color: var(--fg);
-      }
-
-      .flow-steps li p {
-        margin: 0;
-        font-size: 15px;
-        line-height: 1.55;
-        color: var(--muted);
-      }
-
-      @media (max-width: 760px) {
-        .flow-pin-track {
-          display: block;
-        }
-
-        .flow-pin-row {
-          grid-template-columns: 1fr;
-        }
-
-        .flow-col--left {
-          height: auto;
-        }
-
-        .flow-visual-sticky {
-          position: relative;
-          top: auto;
-        }
-
-        .flow-steps-wrap {
-          -webkit-mask-image: none !important;
-          mask-image: none !important;
-        }
-
-        .flow-steps li {
-          padding: clamp(18px, 3vw, 24px) 0;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .flow-section .flow-steps-wrap {
-          -webkit-mask-image: none !important;
-          mask-image: none !important;
-        }
-      }
-
-      .cta-section .section-title {
-        max-width: 20ch;
-      }
-
-      .cta-section .section-lede {
-        margin-bottom: clamp(22px, 4vw, 32px);
-      }
-
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 11px 20px;
-        font-size: 14px;
-        font-weight: 500;
-        letter-spacing: -0.01em;
-        color: var(--fg);
-        background: var(--bg);
-        border: 1px solid rgba(27, 27, 27, 0.14);
-        border-radius: 8px;
-        text-decoration: none;
-        transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease,
-          box-shadow 0.15s ease;
-      }
-
-      .btn:hover {
-        background: #ebebeb;
-        border-color: rgba(27, 27, 27, 0.22);
-      }
-
-      .btn:active {
-        transform: translateY(1px);
-      }
-
-      .cta-section .btn-cta {
-        padding: 13px 24px;
-        font-size: 14px;
-        font-weight: 600;
-        letter-spacing: 0.02em;
-        text-transform: lowercase;
-        color: var(--fg);
-        background: #ffffff00;
-        border: 1px solid var(--fg);
-        border-radius: 10px;
-        box-shadow: none;
-      }
-
-      .cta-section .btn-cta:hover {
-        background: #2e2e2e;
-        border-color: #2e2e2e;
-        color: var(--bg);
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(27, 27, 27, 0.14);
-      }
-
-      .cta-section .btn-cta:active {
-        transform: translateY(0);
-      }
-
-      /*
-       * Cube vertical placement (index.html only):
-       * · margin-top  — space between CTA block and the cube section’s top border
-       * · padding-top — extra empty space above the ASCII art (main “move cube down” control)
-       * · #ascii-cube margin-top — nudge just the pre without changing the fade/footer mask
-       */
-      .cube-section {
-        position: relative;
-        z-index: 0;
-        margin-top: clamp(56px, 10vw, 88px);
-        margin-bottom: 0;
-        padding-top: clamp(72px, 12vw, 120px);
-        padding-bottom: clamp(28px, 8vw, 72px);
-        border-top: 1px solid rgba(27, 27, 27, 0.08);
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        width: 100%;
-      }
-
-      .cube-wrap {
-        position: relative;
-        z-index: 0;
-        display: inline-flex;
-        justify-content: center;
-        max-width: 100%;
-      }
-
-      /* Fade cube into page bg; footer sits on top and hides the rest */
-      .cube-footer-mask {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        bottom: 0;
-        width: min(100vw, calc(100% + 64px));
-        height: clamp(88px, 24vw, 200px);
-        pointer-events: none;
-        background: linear-gradient(
-          to bottom,
-          rgba(245, 245, 245, 0) 0%,
-          rgba(245, 245, 245, 0.2) 22%,
-          rgba(245, 245, 245, 0.55) 48%,
-          rgba(245, 245, 245, 0.88) 72%,
-          var(--bg) 100%
-        );
-      }
-
-      #ascii-cube {
-        font-family: 'SF Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
-        font-weight: 600;
-        font-size: clamp(5.5px, 0.78vw, 9px);
-        line-height: 1.05;
-        white-space: pre;
-        cursor: crosshair;
-        user-select: none;
-        margin: -20px; /* or e.g. margin-top: 24px; to shift only the cube */
-        color: rgba(145, 145, 145, 0.97);
-        flex-shrink: 0;
-      }
-
-      .site-footer {
-        position: relative;
-        z-index: 2;
-        margin-top: clamp(-100px, -15vw, -56px);
-        padding-top: clamp(32px, 5vw, 48px);
-        padding-bottom: clamp(8px, 2vw, 16px);
-        border-top: 1px solid rgba(27, 27, 27, 0.08);
-        background: var(--bg);
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
-
-      .site-footer p {
-        margin: 0;
-        font-size: 13px;
-        color: var(--muted);
-      }
-
-      .site-footer .foot-meta {
-        font-size: 13px;
-        color: var(--muted);
-      }
-
-      .lede {
-        margin: 0 0 clamp(32px, 6vw, 56px);
-        font-size: 15px;
-        line-height: 1.6;
-        color: var(--muted);
-      }
-
-      .hero-text-column .lede {
-        max-width: 100%;
-      }
-
-      /*
-       * Border + radius live on .demo-zoom-viewport inside the iframe.
-       * scale() keeps internal layout identical; negative margin collapses the 20% layout gap below the iframe.
-       */
-      .demo-frame {
-        background: transparent;
-        border-radius: 0;
-        overflow: hidden;
-      }
-
-      .demo-scale-wrap {
-        display: block;
-        width: 100%;
-        overflow: hidden;
-      }
-
-      .demo-scale-wrap iframe {
-        display: block;
-        width: calc(100% / var(--demo-scale));
-        max-width: none;
-        height: var(--demo-iframe-h);
-        border: 0;
-        transform: scale(var(--demo-scale));
-        transform-origin: top left;
-        /* Collapse layout gap: transform doesn’t shrink the box, so pull up by (1 − scale) × height */
-        margin-bottom: calc((var(--demo-scale) - 1) * var(--demo-iframe-h));
-        /* Block interaction with embedded demo (scroll/clicks); kiosk behavior also set inside embed */
-        pointer-events: none;
-      }
-    </style>
+    <link rel="icon" href="assets/logosvg.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/site.css" />
   </head>
   <body>
     <header class="site-header">
       <div class="site-header-shell">
         <div class="site-header-inner" style="display: flex; align-items: center; gap: 32px;">
-          <a class="site-logo" href="#">tlocal</a>
+          <a class="site-logo" href="index.html">tlocal</a>
           <nav class="site-nav" aria-label="Primary" style="display: flex; gap: 28px;">
-            <a href="#features-heading">features</a>
-            <a href="#workflow-heading">flow</a>
-            <a href="#workflow-heading">about</a>
-            <a class="btn mono-thin" href="#cta-heading">book demo</a>
+            <a href="index.html#features-heading">features</a>
+            <a href="index.html#workflow-heading">flow</a>
+            <a href="about.html">about</a>
+            <a
+              class="btn mono-thin"
+              href="https://calendly.com/tongfeiz-usc/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+              >book demo</a
+            >
           </nav>
         </div>
       </div>
@@ -748,7 +57,9 @@
                         From upload to translator queue, tlocal keeps on-screen text tied to timecode and
                         context—so nothing gets lost across a long runtime.
                       </p>
-                      <div class="flow-placeholder-frame" aria-hidden="true"></div>
+                      <div class="workspace-dot-grid-frame" id="workspace-dot-grid" aria-hidden="true">
+                        <canvas></canvas>
+                      </div>
                     </div>
                   </div>
                 </aside>
@@ -900,14 +211,182 @@
             </div>
           </section>
 
+          <section class="section-block partners-section" aria-labelledby="partners-heading">
+            <div class="partners-row">
+              <div class="partners-intro">
+                <p class="section-eyebrow mono-thin">testimonials</p>
+                <h2 id="partners-heading" class="section-title">Trusted by localization teams at</h2>
+              </div>
+              <ul class="partners-logos" aria-label="Partner logos">
+                <li>
+                  <img
+                    src="assets/disney1.webp"
+                    alt="Disney"
+                    width="200"
+                    height="80"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </li>
+                
+                <li>
+                  <img
+                    src="assets/crunch1.webp"
+                    alt="Crunchyroll"
+                    width="200"
+                    height="80"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </li>
+                <li>
+                  <img
+                    src="assets/usc1.webp"
+                    alt="USC"
+                    width="200"
+                    height="80"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </li>
+              </ul>
+            </div>
+            <h3 id="reviews-subheading" class="sr-only">What teams say</h3>
+            <div class="reviews-masonry" aria-labelledby="reviews-subheading">
+              <article class="review-card">
+                <p class="review-card__quote">
+                  Loving the workflow so far—onboarding was basically one afternoon.
+                </p>
+                <footer class="review-card__footer">
+                  <div class="review-card__avatar" aria-hidden="true"></div>
+                  <div class="review-card__meta">
+                    <div class="review-card__name-row">
+                      <span class="review-card__name">Alex Chen</span>
+                      <span class="review-card__verified" aria-label="Verified" title="Verified">
+                        <svg viewBox="0 0 12 12" aria-hidden="true">
+                          <path
+                            d="M2.5 6.2L5 8.7L9.5 3.2"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.35"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                    <p class="review-card__role">Localization lead, Placeholder Studio</p>
+                  </div>
+                </footer>
+              </article>
+
+              <article class="review-card">
+                <p class="review-card__quote">
+                  We’ve been in tlocal every day for weeks. The last time a tool felt this inevitable was when we moved
+                  our design system to components—same “why would we go back?” energy.
+                </p>
+                <footer class="review-card__footer">
+                  <div class="review-card__avatar" aria-hidden="true"></div>
+                  <div class="review-card__meta">
+                    <div class="review-card__name-row">
+                      <span class="review-card__name">Jordan Mills</span>
+                    </div>
+                    <p class="review-card__role">Head of Post, Placeholder Media</p>
+                  </div>
+                </footer>
+              </article>
+
+              <article class="review-card">
+                <p class="review-card__quote">Finally—detections with scores we can triage. Huge for our ops review.</p>
+                <footer class="review-card__footer">
+                  <div class="review-card__avatar" aria-hidden="true"></div>
+                  <div class="review-card__meta">
+                    <div class="review-card__name-row">
+                      <span class="review-card__name">Sam Okonkwo</span>
+                      <span class="review-card__verified" aria-label="Verified" title="Verified">
+                        <svg viewBox="0 0 12 12" aria-hidden="true">
+                          <path
+                            d="M2.5 6.2L5 8.7L9.5 3.2"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.35"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                    <p class="review-card__role">Software engineer, Placeholder Co.</p>
+                  </div>
+                </footer>
+              </article>
+
+              <article class="review-card">
+                <p class="review-card__quote">
+                  Mockups on the actual frame cut our review cycles in half. PMs stop asking “will it fit?” because they
+                  can see it.
+                </p>
+                <footer class="review-card__footer">
+                  <div class="review-card__avatar" aria-hidden="true"></div>
+                  <div class="review-card__meta">
+                    <div class="review-card__name-row">
+                      <span class="review-card__name">Riley Park</span>
+                    </div>
+                    <p class="review-card__role">Design engineer, Placeholder Labs</p>
+                  </div>
+                </footer>
+              </article>
+
+              <article class="review-card">
+                <p class="review-card__quote">
+                  Our language vendors get the same timecode context we do. That alignment used to take three tools and
+                  a spreadsheet nobody trusted.
+                </p>
+                <footer class="review-card__footer">
+                  <div class="review-card__avatar" aria-hidden="true"></div>
+                  <div class="review-card__meta">
+                    <div class="review-card__name-row">
+                      <span class="review-card__name">Morgan Lee</span>
+                      <span class="review-card__verified" aria-label="Verified" title="Verified">
+                        <svg viewBox="0 0 12 12" aria-hidden="true">
+                          <path
+                            d="M2.5 6.2L5 8.7L9.5 3.2"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.35"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                    <p class="review-card__role">VP Content Ops, Placeholder Global</p>
+                  </div>
+                </footer>
+              </article>
+
+              <article class="review-card">
+                <p class="review-card__quote">Short and sweet: routing by locale alone is worth the switch.</p>
+                <footer class="review-card__footer">
+                  <div class="review-card__avatar" aria-hidden="true"></div>
+                  <div class="review-card__meta">
+                    <div class="review-card__name-row">
+                      <span class="review-card__name">Casey Rivera</span>
+                    </div>
+                    <p class="review-card__role">Founding engineer, Placeholder</p>
+                  </div>
+                </footer>
+              </article>
+            </div>
+          </section>
+
           <section class="section-block cta-section" id="flow-cta-section" aria-labelledby="cta-heading">
             <h2 id="cta-heading" class="section-title">See tlocal in your pipeline</h2>
-            <p class="section-lede">
-              Tell us about your team and volume—we’ll follow up with access details.
-            </p>
             <a
               class="btn btn-cta mono-thin"
-              href="mailto:hello@tlocal.app?subject=tlocal%20%E2%80%94%20book%20demo"
+              href="https://calendly.com/tongfeiz-usc/30min"
+              target="_blank"
+              rel="noopener noreferrer"
               >book demo</a
             >
           </section>
@@ -920,13 +399,37 @@
           </section>
 
           <footer class="site-footer">
-            <p class="mono-thin">tlocal</p>
-            <p class="foot-meta">© <span id="y"></span> · Built for translator teams and long-form video</p>
+            <div class="site-footer-top">
+              <div class="site-footer-grid">
+                <div class="site-footer-col">
+                  <h3 class="site-footer-heading mono-thin">[company]</h3>
+                  <ul class="site-footer-links">
+                    <li><a href="about.html">About</a></li>
+                  </ul>
+                </div>
+                <div class="site-footer-col">
+                  <h3 class="site-footer-heading mono-thin">[legal]</h3>
+                  <ul class="site-footer-links">
+                    <li><a href="privacy.html">Privacy</a></li>
+                    <li><a href="terms.html">Terms</a></li>
+                  </ul>
+                </div>
+                <div class="site-footer-col">
+                  <h3 class="site-footer-heading mono-thin">[connect]</h3>
+                  <ul class="site-footer-links">
+                    <li><a href="mailto:tongfeiz@usc.edu">Email</a></li>
+                  </ul>
+                </div>
+              </div>
+              <p class="site-footer-copy mono-thin">© <span id="y"></span> tlocal</p>
+            </div>
           </footer>
         </div>
       </main>
     </div>
+    <script src="js/page-stagger.js" defer></script>
     <script src="js/landing-cube.js" defer></script>
+    <script src="js/workspace-dot-grid.js" defer></script>
     <script>
       document.getElementById('y').textContent = String(new Date().getFullYear());
 
@@ -936,7 +439,6 @@
         if (!track || !row) return;
         var visualCol = track.querySelector('.flow-visual-col');
         var stickyStack = track.querySelector('.flow-visual-sticky');
-        var lastStep = track.querySelector('.flow-steps li:last-child');
         var flowEyebrow = visualCol ? visualCol.querySelector('.section-eyebrow') : null;
         var flowPlaceholder = visualCol ? visualCol.querySelector('.flow-placeholder-frame') : null;
         var stepsWrap = document.getElementById('flow-steps-wrap');
@@ -1003,6 +505,8 @@
           });
         }
 
+        /* Same behavior as workspace (features): row height comes only from the grid — no JS min-height. Sticky
+         *  unsticks when the row scrolls away, so the last step lines up with the left column like the last card. */
         function layout() {
           if (narrow.matches) {
             root.style.removeProperty('--site-header-h');
@@ -1020,31 +524,12 @@
           row.style.minHeight = '';
           row.style.height = '';
 
-          var natural = row.offsetHeight;
-          var h = natural;
-          if (visualCol && lastStep && stickyStack) {
+          if (stickyStack) {
             var stickyH = stickyStack.offsetHeight;
             var half = Math.round(stickyH * 0.5);
             root.style.setProperty('--site-header-h', hdrH() + 'px');
             root.style.setProperty('--flow-sticky-half', half + 'px');
-
-            var vr = visualCol.getBoundingClientRect();
-            var lr = lastStep.getBoundingClientRect();
-            // Gap between step 08 bottom and .flow-visual-col bottom (right column vs left). Sticky travel
-            // through the aside is ~ (rowHeight − stickyHeight); that equals this gap when rowHeight is natural,
-            // so we must NOT add the gap again on top of natural (that double-counted and broke alignment).
-            var alignGap = Math.max(0, lr.bottom - vr.bottom);
-            // Sticky used to engage at top: header; now at max(header, 50vh − half), so engagement is later when
-            // centered — extend row height so the sticky phase still has enough scroll for bottoms to align.
-            var vh = window.innerHeight;
-            var resolvedTop = Math.max(hdrH(), vh * 0.5 - stickyH * 0.5);
-            var engagementSkew = Math.max(0, resolvedTop - hdrH());
-            h = Math.max(natural, stickyH + alignGap + engagementSkew);
           }
-
-          track.style.minHeight = h + 'px';
-          row.style.minHeight = h + 'px';
-          row.style.height = h + 'px';
           scheduleFlowFade();
         }
 
@@ -1063,6 +548,13 @@
             layout();
             requestAnimationFrame(layout);
           });
+        }
+        if (typeof ResizeObserver !== 'undefined') {
+          var ro = new ResizeObserver(function () {
+            layout();
+          });
+          if (stepsWrap) ro.observe(stepsWrap);
+          if (stickyStack) ro.observe(stickyStack);
         }
       })();
     </script>
