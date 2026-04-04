@@ -1,0 +1,2817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TLocal — product walkthrough (demo animation)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f6f6f7;
+      --bg-subtle: #fafafa;
+      --surface: #ffffff;
+      --surface-muted: #f3f3f4;
+      --surface-hover: #ececed;
+      --text-primary: #111111;
+      --text-secondary: #5c5c5c;
+      --text-muted: #8a8a8a;
+      --border: #e8e8e8;
+      --border-strong: #d4d4d4;
+      --accent: #111111;
+      --accent-muted: rgba(17, 17, 17, 0.06);
+      --demo-approved-green: rgb(16, 185, 129);
+      --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      --font-mono: ui-monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Centered demo frame — animation stays inside */
+    .page-demo {
+      min-height: 100svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: max(16px, 2vmin);
+      padding-left: max(16px, 2vmin);
+      box-sizing: border-box;
+    }
+
+    @media (min-width: 901px) {
+      .page-demo {
+        padding-left: 152px;
+      }
+    }
+
+    /* Temporary scene scrubber — outside the demo frame */
+    .scene-scrubber {
+      position: fixed;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: min(92vh, 640px);
+      overflow-y: auto;
+      padding: 10px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: var(--shadow-soft);
+      font-size: 10px;
+    }
+
+    .dark .scene-scrubber {
+      background: rgba(26, 26, 28, 0.96);
+    }
+
+    .scene-scrubber .scrub-title {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      padding: 0 4px;
+    }
+
+    .scene-scrubber .scrub-replay {
+      margin-bottom: 10px;
+      width: 100%;
+      text-align: center;
+      padding: 7px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text-primary);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .scene-scrubber .scrub-replay:hover {
+      background: var(--surface-hover);
+    }
+
+    .scene-scrubber button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text-primary);
+      font-size: 10px;
+      line-height: 1.25;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .scene-scrubber button:hover {
+      background: var(--surface-hover);
+    }
+
+    .scene-scrubber button.active {
+      border-color: var(--accent);
+      background: var(--accent-muted);
+      font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+      .scene-scrubber {
+        position: fixed;
+        left: auto;
+        right: 6px;
+        top: auto;
+        bottom: 6px;
+        transform: none;
+        max-height: 40vh;
+        max-width: 44vw;
+      }
+    }
+
+    /* Clips scaled content; border/shadow live here so zoom stays inside the frame */
+    .demo-zoom-viewport {
+      position: relative;
+      width: min(1100px, 100%);
+      height: min(680px, calc(100svh - 32px));
+      max-height: 88vh;
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft), 0 12px 40px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+
+    .demo-zoom-stage {
+      width: 100%;
+      height: 100%;
+      transform: scale(var(--zoom-scale, 1));
+      transform-origin: var(--zoom-ox, 50%) var(--zoom-oy, 50%);
+      transition: transform 1s cubic-bezier(0.33, 1, 0.53, 1);
+      will-change: transform;
+    }
+
+    .demo-zoom-stage.demo-zoom-no-transition {
+      transition: none !important;
+    }
+
+    .demo-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .app {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      flex-direction: column;
+    }
+
+    .btn-primary {
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 12px;
+      cursor: default;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    /* Main — matches App shell without sidebar */
+    .main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 48px;
+      padding: 0 12px 0 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .header-back {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: default;
+    }
+
+    .header-back svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .header-title-wrap {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .header-rename {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: default;
+    }
+
+    .header-rename svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .btn-ghost {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface-hover);
+    }
+
+    .body-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .scene-stack {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scene {
+      position: absolute;
+      inset: 0;
+      overflow: auto;
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 0.5s cubic-bezier(0.33, 1, 0.68, 1),
+        transform 0.5s cubic-bezier(0.33, 1, 0.68, 1),
+        visibility 0.5s;
+      transform: translateY(10px);
+      pointer-events: none;
+    }
+
+    .scene.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+      pointer-events: auto;
+      z-index: 2;
+    }
+
+    #scene-empty {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    #scene-empty.active {
+      display: flex;
+    }
+
+    /* Empty state */
+    .empty-wrap {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 48px 16px;
+    }
+
+    .empty-wrap h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .empty-wrap p {
+      margin: 0 0 32px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 24px;
+    }
+
+    .card h3 {
+      margin: 0 0 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    /* Workspace split — flex only when .scene.active */
+    .workspace {
+      flex-direction: column;
+      gap: 16px;
+      padding: 12px 16px 16px;
+    }
+
+    .scene.workspace.active {
+      display: flex;
+    }
+
+    @media (min-width: 900px) {
+      .workspace {
+        flex-direction: row;
+        align-items: stretch;
+      }
+      .col-video {
+        width: 38%;
+        max-width: 420px;
+        flex-shrink: 0;
+      }
+    }
+
+    .col-video {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .video-shell {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f0f10;
+      overflow: hidden;
+    }
+
+    .demo-video-el {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .demo-video-el.hidden {
+      display: none;
+    }
+
+    #demo-canvas-fallback {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    #demo-canvas-fallback.visible {
+      display: block;
+    }
+
+    .video-filmstrip {
+      position: absolute;
+      inset: 0;
+      opacity: 0.35;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 18px,
+        rgba(255, 255, 255, 0.04) 18px,
+        rgba(255, 255, 255, 0.04) 19px
+      );
+    }
+
+    .video-label {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.75);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    }
+
+    .analysis-overlay {
+      position: absolute;
+      inset: -1px;
+      background:
+        radial-gradient(ellipse 120% 90% at 50% 45%, rgba(10, 10, 12, 0.72) 0%, rgba(0, 0, 0, 0.88) 62%, rgba(0, 0, 0, 0.92) 100%),
+        rgba(4, 4, 6, 0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.55);
+    }
+
+    .analysis-overlay.visible {
+      display: flex;
+    }
+
+    .analysis-overlay p.status {
+      margin: 0 0 12px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .progress-track {
+      width: 100%;
+      max-width: 240px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: #fff;
+      transition: width 0.07s ease-out;
+    }
+
+    .analysis-meta {
+      margin-top: 10px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .mini-tickets {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      flex: 1;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Timeline (confidence-colored segments) — under video, matches app logic */
+    .demo-timeline {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 8px 10px 10px;
+      flex-shrink: 0;
+    }
+
+    .demo-timeline-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .demo-timeline-head strong {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .demo-timeline-track {
+      position: relative;
+      height: 32px;
+      border-radius: 6px;
+      background: var(--surface-muted);
+      overflow: hidden;
+    }
+
+    .demo-timeline-segments {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .demo-timeline-seg {
+      position: absolute;
+      top: 3px;
+      bottom: 3px;
+      border-radius: 4px;
+      min-width: 10px;
+      pointer-events: auto;
+      cursor: default;
+      border: 0;
+      padding: 0;
+      transition:
+        background 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .demo-timeline-seg.tier-high {
+      background: rgba(16, 185, 129, 0.42);
+      box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.35);
+    }
+
+    .demo-timeline-seg.tier-mid {
+      background: rgba(245, 158, 11, 0.48);
+      box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+    }
+
+    .demo-timeline-seg.tier-low {
+      background: rgba(239, 68, 68, 0.42);
+      box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.3);
+    }
+
+    .demo-timeline-playhead {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      margin-left: -1px;
+      background: var(--text-primary);
+      opacity: 0.85;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .demo-timeline-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      margin-top: 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .demo-timeline-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .demo-timeline-legend i {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .demo-timeline-legend i.lg {
+      background: rgba(16, 185, 129, 0.55);
+    }
+
+    .demo-timeline-legend i.md {
+      background: rgba(245, 158, 11, 0.55);
+    }
+
+    .demo-timeline-legend i.lr {
+      background: rgba(239, 68, 68, 0.55);
+    }
+
+    .mini-tickets .mt-head {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mini-tickets ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      font-size: 11px;
+    }
+
+    .mini-tickets li {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mini-tickets li:last-child {
+      border-bottom: 0;
+    }
+
+    .mini-tickets button {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      padding: 8px 12px;
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      cursor: default;
+      font: inherit;
+      color: var(--text-primary);
+    }
+
+    .mini-tickets li.sel button {
+      background: var(--accent-muted);
+    }
+
+    .col-table {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 280px;
+    }
+
+    .ticket-panel {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    table.demo-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    table.demo-table th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-muted);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    table.demo-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    table.demo-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    table.demo-table tr.row-sel td {
+      background: var(--accent-muted);
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 500;
+      background: var(--surface-muted);
+      color: var(--text-secondary);
+    }
+
+    .approve-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chk {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .chk.on {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      transform: scale(1.05);
+    }
+
+    .ticket-toolbar-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ticket-toolbar-head h2 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .ticket-toolbar-head .sub {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .ticket-toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ticket-toolbar-actions .sep {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+      margin: 0 2px;
+    }
+
+    .btn-ticket {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: default;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-ticket:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .toolbar .spacer {
+      flex: 1;
+    }
+
+    #btn-continue.continue-off {
+      opacity: 0.38;
+      pointer-events: none;
+      cursor: default;
+      transition: opacity 0.35s ease;
+    }
+
+    #btn-continue:not(.continue-off) {
+      transition: opacity 0.35s ease, transform 0.2s ease;
+    }
+
+    .placeholder-panel {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      text-align: center;
+      min-height: 200px;
+    }
+
+    .placeholder-panel-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      max-width: 100%;
+      width: 100%;
+      text-align: center;
+    }
+
+    .placeholder-ascii-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100%;
+      margin: 0 0 34px;
+    }
+
+    .placeholder-ascii-viewport {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow: hidden;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+
+    .placeholder-ascii-cube {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font-family: ui-monospace, "Courier New", Courier, monospace;
+      font-size: 6px;
+      font-weight: bold;
+      line-height: 1.05;
+      white-space: pre;
+      color: var(--text-secondary);
+      opacity: 0.92;
+      pointer-events: none;
+      user-select: none;
+      flex-shrink: 0;
+      transform: scale(var(--ascii-scale, 1));
+      transform-origin: top center;
+    }
+
+    .ticket-panel > .placeholder-panel {
+      margin: 0 16px 16px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: var(--bg-subtle);
+    }
+
+    .placeholder-panel p {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .placeholder-panel .sub {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* Localization */
+    .loc-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      margin-bottom: 12px;
+    }
+
+    .loc-bar h2 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .loc-bar .hint {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+    }
+
+    .tabs button {
+      border: 0;
+      background: transparent;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: default;
+    }
+
+    .tabs button.active {
+      background: var(--surface);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .team-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+
+    .team-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 16px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .team-card .team-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .team-card .team-name {
+      margin-top: 4px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .team-card .stat {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .team-card .stat strong {
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+    }
+
+    .bar {
+      margin-top: 8px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--surface-muted);
+      overflow: hidden;
+    }
+
+    .bar > i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: var(--accent);
+      transition: width 0.5s ease;
+    }
+
+    .team-grid.is-final-grow .bar > i {
+      background: var(--demo-approved-green);
+      transition: width 0.58s cubic-bezier(0.33, 1, 0.68, 1);
+    }
+
+    .team-card button {
+      margin-top: 12px;
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--surface);
+      cursor: default;
+    }
+
+    .team-card button:hover {
+      background: var(--surface-hover);
+    }
+
+    .team-table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      overflow: auto;
+      max-height: min(420px, 50vh);
+    }
+
+    .team-table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .team-table-wrap th {
+      position: sticky;
+      top: 0;
+      background: var(--surface-muted);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+
+    .team-table-wrap td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .frame-thumb {
+      width: 120px;
+      height: 68px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: #222224;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .frame-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .frame-thumb .cap {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
+      text-align: center;
+      padding: 4px;
+      pointer-events: none;
+    }
+
+    .mock-slot {
+      width: 100px;
+      height: 56px;
+      border-radius: 4px;
+      border: 1px dashed var(--border-strong);
+      background: var(--surface-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      overflow: hidden;
+    }
+
+    .mock-slot.filled {
+      border-style: solid;
+      padding: 0;
+    }
+
+    .mock-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 3px;
+    }
+
+    /* Per-locale mock “screen” background (low saturation — visible frame behind still) */
+    .mock-slot.filled[class*='mock-lang-'] {
+      padding: 3px;
+    }
+
+    .mock-slot.filled.mock-lang-es {
+      background: hsl(210, 18%, 86%);
+      border-color: hsl(210, 14%, 74%);
+    }
+
+    .mock-slot.filled.mock-lang-zh {
+      background: hsl(42, 22%, 88%);
+      border-color: hsl(42, 18%, 76%);
+    }
+
+    .mock-slot.filled.mock-lang-hi {
+      background: hsl(155, 16%, 87%);
+      border-color: hsl(155, 14%, 74%);
+    }
+
+    .mock-slot.filled.mock-lang-ja {
+      background: hsl(265, 15%, 88%);
+      border-color: hsl(265, 12%, 76%);
+    }
+
+    .mock-slot.filled.mock-lang-fr {
+      background: hsl(328, 14%, 88%);
+      border-color: hsl(328, 12%, 76%);
+    }
+
+    .mock-slot.filled[class*='mock-lang-'] img {
+      border-radius: 2px;
+    }
+
+    .tx-input {
+      width: 100%;
+      min-width: 120px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 8px;
+      font: inherit;
+      background: var(--surface);
+    }
+
+    .tx-input.filled {
+      border-color: var(--border-strong);
+    }
+
+    @keyframes fade-rise {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .reveal-in {
+      animation: fade-rise 0.6s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      background: var(--surface);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .pulse {
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.55;
+      }
+    }
+  </style>
+</head>
+<body>
+  <aside class="scene-scrubber" id="scene-scrubber" aria-label="Jump to demo scene">
+    <div class="scrub-title">Scenes (temp)</div>
+    <button type="button" class="scrub-replay" id="btn-replay" aria-label="Replay demo">Replay</button>
+  </aside>
+
+  <div class="page-demo">
+    <div class="demo-zoom-viewport" id="demo-zoom-viewport">
+      <div class="demo-zoom-stage" id="demo-zoom-stage">
+    <div class="demo-frame" id="demo-frame">
+      <div class="app">
+        <div class="main">
+          <header class="header">
+            <button type="button" class="header-back" id="btn-back" aria-label="Back to home" tabindex="-1">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            <div class="header-title-wrap">
+              <h1 id="header-title">untitled_project</h1>
+              <button type="button" class="header-rename" aria-label="Rename project" tabindex="-1">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <div class="body-scroll">
+            <div class="scene-stack">
+              <!-- Empty -->
+              <section class="scene active" id="scene-empty">
+                <div class="empty-wrap">
+                  <h2>On-screen text for full films</h2>
+                  <p>
+                    Built for entire movies and long programs. Upload a film file to extract signs,
+                    subtitles, credits, and graphics as reviewable tickets across the full runtime.
+                  </p>
+                  <div class="card" id="upload-card">
+                    <h3>Upload new</h3>
+                    <button type="button" class="btn-primary" id="btn-upload">Upload movie file</button>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Workspace: review -->
+              <section class="scene workspace" id="scene-workspace">
+                <div class="col-video">
+                  <div class="video-shell" id="video-shell">
+                    <video
+                      id="demo-video"
+                      class="demo-video-el hidden"
+                      muted
+                      playsinline
+                      loop
+                      preload="auto"
+                      aria-label="Placeholder programme video"
+                    ></video>
+                    <canvas id="demo-canvas-fallback" width="640" height="360" aria-hidden="true"></canvas>
+                    <div class="video-filmstrip"></div>
+                    <div class="video-label" id="video-label">No file loaded</div>
+                    <div class="analysis-overlay" id="analysis-overlay">
+                      <p class="status" id="analysis-status">Decoding frames…</p>
+                      <div class="progress-track">
+                        <div class="progress-fill" id="progress-fill"></div>
+                      </div>
+                      <p class="analysis-meta"><span id="analysis-eta">~12s</span> · full-timeline scan (simulated)</p>
+                    </div>
+                  </div>
+
+                  <div class="demo-timeline hidden" id="demo-timeline" aria-label="Ticket timeline by time and AI confidence">
+                    <div class="demo-timeline-head">
+                      <strong>Timeline</strong>
+                      <span class="mono" id="demo-timeline-tc">00:00:00:00</span>
+                    </div>
+                    <div class="demo-timeline-track" id="demo-timeline-track">
+                      <div class="demo-timeline-segments" id="demo-timeline-segments"></div>
+                      <div class="demo-timeline-playhead" id="demo-timeline-playhead" style="left: 0%"></div>
+                    </div>
+                    <div class="demo-timeline-legend">
+                      <span><i class="lg" aria-hidden="true"></i> High (≥7/10)</span>
+                      <span><i class="md" aria-hidden="true"></i> Mid (4–7)</span>
+                      <span><i class="lr" aria-hidden="true"></i> Low (&lt;4)</span>
+                    </div>
+                  </div>
+
+                  <div class="mini-tickets hidden" id="mini-tickets">
+                    <div class="mt-head">Tickets</div>
+                    <ul id="mini-list"></ul>
+                  </div>
+                </div>
+
+                <div class="col-table">
+                  <div class="ticket-panel" id="ticket-panel">
+                    <div class="ticket-toolbar-head">
+                      <div>
+                        <h2>Translator review queue</h2>
+                        <p class="sub" id="queue-count">0 shown · 0 total</p>
+                      </div>
+                      <div class="ticket-toolbar-actions">
+                        <div style="display: flex; gap: 4px; border-right: 1px solid var(--border); padding-right: 8px; margin-right: 4px">
+                          <button type="button" class="btn-ticket" disabled title="Undo (⌘Z)">
+                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 6 6v0" />
+                            </svg>
+                            Undo
+                          </button>
+                          <button type="button" class="btn-ticket" disabled title="Redo (⌘⇧Z)">
+                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0-6 6v0" />
+                            </svg>
+                            Redo
+                          </button>
+                        </div>
+                        <button type="button" class="btn-ticket">Add ticket</button>
+                        <button type="button" class="btn-primary continue-off" id="btn-continue" style="padding: 6px 12px; font-size: 12px">
+                          Continue to next step
+                        </button>
+                        <button type="button" class="btn-ticket">Export ▾</button>
+                      </div>
+                    </div>
+                    <div class="placeholder-panel" id="table-placeholder">
+                      <div class="placeholder-panel-stack">
+                        <div class="placeholder-ascii-wrap hidden" id="ph-ascii-wrap" aria-hidden="true">
+                          <div class="placeholder-ascii-viewport" id="ph-ascii-viewport">
+                            <pre class="placeholder-ascii-cube" id="analysis-ascii-cube"></pre>
+                          </div>
+                        </div>
+                        <p id="ph-title">Tickets will appear here</p>
+                        <p class="sub" id="ph-sub">Run analysis to extract on-screen text for the full film.</p>
+                      </div>
+                    </div>
+                    <div class="table-wrap hidden" id="table-wrap">
+                      <table class="demo-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>In</th>
+                            <th>Out</th>
+                            <th>Detected text</th>
+                            <th>Type</th>
+                            <th>Approved</th>
+                          </tr>
+                        </thead>
+                        <tbody id="ticket-rows"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Localization -->
+              <section class="scene" id="scene-localization" style="padding: 10px 14px 14px">
+                <div class="loc-bar" id="loc-bar">
+                  <div>
+                    <button type="button" class="btn-ghost" style="margin-bottom: 8px" id="btn-loc-back" tabindex="-1">
+                      ← Back to review
+                    </button>
+                    <h2>Localization step</h2>
+                    <p class="hint">Demo: switch perspectives as if you signed in as admin or a language team.</p>
+                  </div>
+                  <div>
+                    <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); display: block; margin-bottom: 4px">View as</span>
+                    <div class="tabs" id="perspective-tabs"></div>
+                  </div>
+                </div>
+
+                <div id="loc-admin">
+                  <div class="team-grid" id="team-grid"></div>
+                  <p style="margin-top: 16px; font-size: 12px; font-weight: 500; color: var(--text-primary)">
+                    Per-string status (approved tickets only)
+                  </p>
+                  <p style="margin-top: 6px; font-size: 12px; color: var(--text-muted)">
+                    Each team translates strings and attaches a mock still. Progress fills as teams confirm.
+                  </p>
+                </div>
+
+                <div id="loc-team" class="hidden">
+                  <div style="border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 12px 16px; margin-bottom: 10px">
+                    <h2 style="margin: 0; font-size: 13px; font-weight: 600" id="team-heading">Spanish localization</h2>
+                    <p style="margin: 6px 0 0; font-size: 12px; color: var(--text-muted)">
+                      Use context from the frame, enter a translation, add a mock image, then confirm.
+                    </p>
+                  </div>
+                  <div class="team-table-wrap" id="team-workspace-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Frame</th>
+                          <th>Detected</th>
+                          <th>Translation</th>
+                          <th>Mock</th>
+                          <th>Confirm</th>
+                        </tr>
+                      </thead>
+                      <tbody id="team-rows"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      /** confidence: model score 0–1 → 1–10 score; tier: high ≥7, mid ≥4, low <4 */
+      const TICKETS = [
+        { id: 't1', text: 'Please silence phones', inSec: 45, outSec: 120, type: 'subtitle', confidence: 0.92 },
+        { id: 't2', text: 'WELCOME TO THE SHOW', inSec: 72, outSec: 180, type: 'subtitle', confidence: 0.88 },
+        { id: 't3', text: 'NOW SHOWING', inSec: 200, outSec: 360, type: 'poster', confidence: 0.62 },
+        { id: 't4', text: 'EXIT', inSec: 5024, outSec: 5160, type: 'sign', confidence: 0.55 },
+        { id: 't5', text: 'Do not enter', inSec: 7500, outSec: 7680, type: 'label', confidence: 0.35 },
+        { id: 't6', text: 'Emergency exit →', inSec: 8800, outSec: 8920, type: 'label', confidence: 0.78 },
+        { id: 't7', text: '15 MINUTES LATER', inSec: 9000, outSec: 9180, type: 'graphic', confidence: 0.41 },
+        { id: 't8', text: 'CLOSED', inSec: 12000, outSec: 12120, type: 'sign', confidence: 0.84 },
+      ]
+
+      const LANGS = [
+        { code: 'es', label: 'Spanish' },
+        { code: 'zh', label: 'Chinese' },
+        { code: 'ja', label: 'Japanese' },
+        { code: 'hi', label: 'Hindi' },
+        { code: 'fr', label: 'French' },
+      ]
+
+      const TRANSLATIONS = {
+        es: [
+          'Silencien sus teléfonos',
+          'Bienvenidos al espectáculo',
+          'EN CARTELERA',
+          'Salida',
+          'No pasar',
+          'Salida de emergencia →',
+          '15 MINUTOS DESPUÉS',
+          'CERRADO',
+        ],
+        zh: ['请关闭手机或调至静音', '欢迎观看演出', '现正放映', '出口', '请勿进入', '紧急出口 →', '15 分钟后', '已关闭'],
+        ja: [
+          '携帯電話はマナーモードに',
+          'ショーへようこそ',
+          '上映中',
+          '出口',
+          '立入禁止',
+          '非常口 →',
+          '15分後',
+          '閉店',
+        ],
+        hi: [
+          'कृपया फ़ोन बंद रखें',
+          'शो में आपका स्वागत है',
+          'अब प्रदर्शित',
+          'बाहर निकलें',
+          'प्रवेश निषेध',
+          'आपातकालीन निकास →',
+          '15 मिनट बाद',
+          'बंद',
+        ],
+        fr: [
+          'Veuillez éteindre les téléphones',
+          'Bienvenue au spectacle',
+          'À l’affiche',
+          'Sortie',
+          'Entrée interdite',
+          'Sortie de secours →',
+          '15 MINUTES PLUS TARD',
+          'FERMÉ',
+        ],
+      }
+
+      /** One JPEG data URL per ticket, captured from the placeholder video (or canvas). */
+      const VIDEO_FRAMES = new Array(8).fill(
+        'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+      )
+
+      let demoVideoBlobUrl = null
+      let canvasAnimId = null
+
+      const SCENE_LABELS = [
+        '1 · Empty home',
+        '2 · Workspace (queue empty)',
+        '3 · Analysis overlay',
+        '4 · Tickets (review)',
+        '5 · Half approved',
+        '6 · Full approved',
+        '7 · Loc · Admin',
+        '8 · Spanish',
+        '9 · Chinese',
+        '10 · Japanese',
+        '11 · Hindi',
+        '12 · French',
+        '13 · All teams',
+        '14 · Final',
+      ]
+
+      const ANALYSIS_MESSAGES = [
+        'Decoding frames…',
+        'Running OCR on key regions…',
+        'Tracking text across time…',
+        'Building translator tickets…',
+      ]
+
+      const REVIEW_SEQ_SCALE = 1.4
+      const TICKET_REVIEW_DURATION_BOOST = 2
+      const APPROVE_STAGGER_MS = Math.round(72 * REVIEW_SEQ_SCALE * TICKET_REVIEW_DURATION_BOOST)
+      /** After ticket UI is visible, pause before first approve tick (stagger). */
+      const TICKETS_REVEAL_PAUSE_MS = Math.round(480 * REVIEW_SEQ_SCALE * TICKET_REVIEW_DURATION_BOOST)
+      const POST_APPROVE_PAUSE_MS = Math.round(650 * REVIEW_SEQ_SCALE * TICKET_REVIEW_DURATION_BOOST)
+      const ANALYSIS_DURATION_MS = 1900
+      /** Auto demo: pause after each locale workspace before the next (descending). */
+      const LOC_GAP_AFTER_LANG_MS = [640, 580, 520, 460, 400]
+      /** Loc admin beat before Spanish (longer hold). */
+      const ADMIN_LOC_HOLD_MS = 1520
+      const TEAM_FINAL_STAGGER_MS = 28
+      /** Grid grow + bars fill; pause before card outlines. */
+      const TEAM_FINAL_ANIM_HOLD_MS = 4 * TEAM_FINAL_STAGGER_MS + 800
+      /** Slower ease-out from locale corner zoom → full frame (visual only; can exceed hold). */
+      const FINAL_SCENE_ZOOM_OUT_MS = 3400
+      const FINAL_SCENE_ZOOM_OUT_EASE = 'cubic-bezier(0.18, 0.7, 0.25, 1)'
+      /** Extra linger on the last frame after card outlines (end of demo). */
+      const FINAL_SCENE_TAIL_MS = 2400
+
+      /** Auto demo: ES two-phase row; each next language uses a shorter per-row pause. */
+      const LOC_DEMO_SPECS = [
+        { code: 'es', label: 'Spanish localization', kind: 'two', p1: 74, p2: 46 },
+        { code: 'zh', label: 'Chinese localization', kind: 'one', row: 56 },
+        { code: 'ja', label: 'Japanese localization', kind: 'one', row: 42 },
+        { code: 'hi', label: 'Hindi localization', kind: 'one', row: 32 },
+        { code: 'fr', label: 'French localization', kind: 'one', row: 22 },
+      ]
+
+      function analysisBarDisplayRatio(linearT) {
+        const u = Math.min(1, Math.max(0, linearT))
+        return (1 - Math.exp(-4.25 * u)) * 0.965
+      }
+
+      /* ASCII tlocal cube (from tlocal cube interactive.html) — TLOCAL wireframe, no pointer/hover. */
+      const TLOCAL_ASCII_PATTERN = `
+    
+    
+                                  @@@@@@                                  
+                               @@@@@@@@@@@@                               
+                           @@@@@@@    @@@@@@@@                            
+                         @@@@@@    @@@@@@@@@@@@@@                         
+                     @@@@@@@@@  @@@@@@         @@@@@@                     
+                  @@@@@@  @@@@@@@@@               @@@@@@                  
+               @@@@@      @@@@@                      @@@@@@               
+           @@@@@@     @@@@@@                            @@@@@@            
+        @@@@@@@@@@@@@@@@@                                  @@@@@@         
+     @@@@@@    @@@@@@@                                        @@@@@@@     
+  @@@@@@     @@@@@@                                          @@@@@@@@@@@  
+@@@@@@    @@@@@                                           @@@@@      @@@@@
+@@@@@@@@@@@@                                          @@@@@@@    @@@@@@@@@
+@@@@@@@@@@@@                                       @@@@@@@@    @@@@@@@@@@@
+@@  @@@@@@@@@@@                                 @@@@@@  @@@@@@@@@@@@@@@@@@
+@@   @@@@@@@@@@@@@@                          @@@@@@     @@@@@@@@@@@@@@@@@@
+@@   @@@   @@@@@@@@@@                     @@@@@@     @@@@@@@@@@@@@@@@@@@@@
+@@   @@@      @@@@@@@@@@@             @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@  @@@         @@@@@@@@@@@       @@@@@@@   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@             @@@@@@@@@@@@@@@@@     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@               @@@@@@@@@@@@     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@ @@@@                   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@  @@@@                    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@   @@@                     @@@ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@   @@@                     @@@  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@  @@@                     @@@  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@  @@@                     @@@   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@                     @@@  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@                     @@@@ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@  @@@@                     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@   @@@                     @@@ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@   @@@                     @@@  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@   @@@                     @@@  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@  @@@                     @@@  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@                     @@@  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  @@@@@@@                    @@@@ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  
+     @@@@@@@                 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@     
+         @@@@@@              @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@        
+            @@@@@@           @@@  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@           
+               @@@@@@        @@@  @@@@@@@@@@@@@@@@@@@@@@@@@               
+                  @@@@@@@    @@@  @@@@@@@@@@@@@@@@@@@@@@                  
+                     @@@@@@@@@@@  @@@@@@@@@@@@@@@@@@@                     
+                         @@@@@@@  @@@@@@@@@@@@@@@                         
+                            @@@@@@@@@@@@@@@@@@@                           
+                               @@@@@@@@@@@@                               
+                                  @@@@@@                                  `
+
+      const TLOCAL_UPPER = ['T', 'L', 'O', 'C', 'A', 'L']
+      const rawAsciiLines = TLOCAL_ASCII_PATTERN.split('\n')
+      const isAsciiBlank = (s) => s.length === 0 || /^\s+$/.test(s)
+      let _a = 0
+      while (_a < rawAsciiLines.length && isAsciiBlank(rawAsciiLines[_a])) _a++
+      let _b = rawAsciiLines.length
+      while (_b > _a && isAsciiBlank(rawAsciiLines[_b - 1])) _b--
+      const analysisAsciiLines = rawAsciiLines.slice(_a, _b)
+
+      let analysisAsciiTick = 0
+      let analysisAsciiTimer = null
+
+      function renderAnalysisAscii() {
+        const pre = document.getElementById('analysis-ascii-cube')
+        if (!pre) return
+        const out = analysisAsciiLines.map((line, lineIndex) => {
+          const letter = TLOCAL_UPPER[(analysisAsciiTick + lineIndex) % TLOCAL_UPPER.length]
+          return line.replace(/@/g, letter)
+        })
+        pre.textContent = out.join('\n')
+      }
+
+      /** Scale ASCII art to the placeholder width; viewport box matches scaled drawing (nothing clipped). */
+      function fitAnalysisAsciiCube() {
+        const wrap = document.getElementById('ph-ascii-wrap')
+        const vp = document.getElementById('ph-ascii-viewport')
+        const pre = document.getElementById('analysis-ascii-cube')
+        if (!wrap || !vp || !pre || wrap.classList.contains('hidden')) return
+
+        pre.style.setProperty('--ascii-scale', '1')
+        vp.style.width = '100%'
+        vp.style.height = 'auto'
+
+        const naturalW = pre.offsetWidth
+        const naturalH = pre.offsetHeight
+        if (!naturalW || !naturalH) return
+
+        const maxW = Math.max(48, wrap.clientWidth)
+        const s = Math.min(1, maxW / naturalW)
+
+        pre.style.setProperty('--ascii-scale', String(s))
+        vp.style.width = `${naturalW * s}px`
+        vp.style.height = `${naturalH * s}px`
+      }
+
+      function startAnalysisAsciiAnimation() {
+        if (analysisAsciiTimer != null) return
+        const wrap = document.getElementById('ph-ascii-wrap')
+        if (wrap) {
+          wrap.classList.remove('hidden')
+          wrap.setAttribute('aria-hidden', 'false')
+        }
+        analysisAsciiTick = 0
+        renderAnalysisAscii()
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => fitAnalysisAsciiCube())
+        })
+        analysisAsciiTimer = window.setInterval(() => {
+          analysisAsciiTick = (analysisAsciiTick + 1) % TLOCAL_UPPER.length
+          renderAnalysisAscii()
+        }, 120)
+      }
+
+      function stopAnalysisAsciiAnimation() {
+        if (analysisAsciiTimer != null) {
+          clearInterval(analysisAsciiTimer)
+          analysisAsciiTimer = null
+        }
+        const wrap = document.getElementById('ph-ascii-wrap')
+        if (wrap) {
+          wrap.classList.add('hidden')
+          wrap.setAttribute('aria-hidden', 'true')
+        }
+      }
+
+      window.addEventListener(
+        'resize',
+        () => {
+          requestAnimationFrame(() => fitAnalysisAsciiCube())
+        },
+        { passive: true }
+      )
+
+      /**
+       * Scene manifest (for editing pacing / content). Approximate segment durations —
+       * see runDemo() for exact pause() and animation calls.
+       *
+       * 1  Start / empty home — hold before “upload”
+       * 2  Upload beat — user picks file (implied)
+       * 3  Workspace — project name + video column + empty queue (scrubber only; auto-run skips to analysis)
+       * 4  Analysis — overlay, progress (~1.5s animation)
+       * 5  Review ready — 8 tickets, mini list, table reveal
+       * 6  Approve sweep — 8 rows, staggered checkmarks (1.4× pacing)
+       * 7  Continue CTA — button enables
+       * 8  Localization admin — team cards, View as tabs
+       * 9  Spanish workspace — fill translation + mock + confirm per row
+       * 10 Chinese workspace — fast pass
+       * 11–12 Japanese → Hindi → French — row cadence shortens each language
+       * 13 All teams — admin snapshot
+       * 14 Final — bars 0/8 → 8/8 in approval green, staggered; card outlines
+       * 15 End — Replay in sidebar (temp scrubber)
+       *
+       * Zoom: disabled; re-enable later once pacing is locked.
+       */
+
+      function formatTc(sec) {
+        const h = Math.floor(sec / 3600)
+        const m = Math.floor((sec % 3600) / 60)
+        const s = Math.floor(sec % 60)
+        const f = Math.floor((sec % 1) * 24)
+        const pad = (n) => String(n).padStart(2, '0')
+        return `${pad(h)}:${pad(m)}:${pad(s)}:${pad(f)}`
+      }
+
+      const el = (id) => document.getElementById(id)
+
+      const ZOOM_EASE = 'cubic-bezier(0.33, 1, 0.53, 1)'
+      const ZOOM_TO_UPLOAD_MS = 1150
+      const ZOOM_SCALE_FOCUS = 1.5
+      /** Chinese → French: mild zoom, focal point pinned to top-right border */
+      const ZOOM_SCALE_LOCALE = 1.22
+      const ZOOM_LOCALE_CORNER_OX = 99.6
+      const ZOOM_LOCALE_CORNER_OY = 2
+      /** Ticket review (half / full approved): tighter zoom, focal point on right edge */
+      const ZOOM_SCALE_TICKET_REVIEW = 1.28
+      const ZOOM_ORIGIN_X_RIGHT_EDGE = 99.2
+
+      function setDemoZoomImmediate(scale, oxPct, oyPct) {
+        const stage = el('demo-zoom-stage')
+        if (!stage) return
+        stage.classList.add('demo-zoom-no-transition')
+        stage.style.setProperty('--zoom-scale', String(scale))
+        stage.style.setProperty('--zoom-ox', `${oxPct}%`)
+        stage.style.setProperty('--zoom-oy', `${oyPct}%`)
+        void stage.offsetHeight
+        stage.classList.remove('demo-zoom-no-transition')
+      }
+
+      /** Visual only — does not block demo timing. */
+      function startZoomResetDuring(durationMs, ease = ZOOM_EASE) {
+        const stage = el('demo-zoom-stage')
+        if (!stage) return
+        stage.style.transition = `transform ${durationMs}ms ${ease}`
+        stage.style.setProperty('--zoom-scale', '1')
+        stage.style.setProperty('--zoom-ox', '50%')
+        stage.style.setProperty('--zoom-oy', '50%')
+      }
+
+      /**
+       * Final zoom-out after French: scale down only, keeping transform-origin at the locale corner
+       * so the move reads as backing out of the same framing (avoids drifting origin to center mid-animation).
+       */
+      function startFinalSceneZoomOutFromLocaleCorner(durationMs, ease) {
+        const stage = el('demo-zoom-stage')
+        if (!stage) return
+        stage.style.setProperty('--zoom-ox', `${ZOOM_LOCALE_CORNER_OX}%`)
+        stage.style.setProperty('--zoom-oy', `${ZOOM_LOCALE_CORNER_OY}%`)
+        void stage.offsetHeight
+        stage.style.transition = `transform ${durationMs}ms ${ease}`
+        stage.style.setProperty('--zoom-scale', '1')
+        window.setTimeout(() => {
+          setDemoZoomImmediate(1, 50, 50)
+        }, durationMs + 50)
+      }
+
+      /** Zoom toward upload button; runs over empty-home holds (starts immediately = reads earlier). */
+      function startZoomToUploadDuring(durationMs = ZOOM_TO_UPLOAD_MS) {
+        const stage = el('demo-zoom-stage')
+        const btn = el('btn-upload')
+        if (!stage || !btn) return
+        requestAnimationFrame(() => {
+          const sr = stage.getBoundingClientRect()
+          const er = btn.getBoundingClientRect()
+          if (sr.width < 1 || sr.height < 1) return
+          const ox = ((er.left + er.width / 2 - sr.left) / sr.width) * 100
+          const oy = ((er.top + er.height / 2 - sr.top) / sr.height) * 100
+          stage.style.transition = `transform ${durationMs}ms ${ZOOM_EASE}`
+          stage.style.setProperty('--zoom-ox', `${ox}%`)
+          stage.style.setProperty('--zoom-oy', `${oy}%`)
+          stage.style.setProperty('--zoom-scale', String(ZOOM_SCALE_FOCUS))
+        })
+      }
+
+      /** Zoom toward right edge + approve column; spans all approval staggers. */
+      function startZoomToTicketPanelDuring(durationMs) {
+        const stage = el('demo-zoom-stage')
+        const tp = el('ticket-panel')
+        if (!stage || !tp) return
+        requestAnimationFrame(() => {
+          const sr = stage.getBoundingClientRect()
+          const er = tp.getBoundingClientRect()
+          if (sr.width < 1 || sr.height < 1) return
+          const oy = ((er.top + er.height / 2 - sr.top) / sr.height) * 100
+          stage.style.transition = `transform ${durationMs}ms ${ZOOM_EASE}`
+          stage.style.setProperty('--zoom-ox', `${ZOOM_ORIGIN_X_RIGHT_EDGE}%`)
+          stage.style.setProperty('--zoom-oy', `${oy}%`)
+          stage.style.setProperty('--zoom-scale', String(ZOOM_SCALE_TICKET_REVIEW))
+        })
+      }
+
+      /**
+       * Wall-clock span: Chinese workspace → gaps → … → French workspace (excludes gap after French).
+       * Matches runDemo’s for-loop so one CSS transition stays in sync with the demo.
+       */
+      function computeLocaleZoomPanDurationMs() {
+        let ms = 0
+        const n = TICKETS.length
+        for (let li = 1; li < LOC_DEMO_SPECS.length; li++) {
+          const spec = LOC_DEMO_SPECS[li]
+          if (spec.kind === 'two') {
+            ms += n * (spec.p1 + spec.p2)
+          } else {
+            ms += n * spec.row
+          }
+          if (li < LOC_DEMO_SPECS.length - 1 && li < LOC_GAP_AFTER_LANG_MS.length) {
+            ms += LOC_GAP_AFTER_LANG_MS[li]
+          }
+        }
+        return Math.max(800, ms)
+      }
+
+      /** Single smooth pan from center → top-right corner (border); call once at start of Chinese (Spanish = no zoom). */
+      function startLocaleZoomSmoothPan() {
+        const stage = el('demo-zoom-stage')
+        if (!stage) return
+        const ms = computeLocaleZoomPanDurationMs()
+        stage.style.transition = `transform ${ms}ms cubic-bezier(0.45, 0.02, 0.25, 1)`
+        stage.style.setProperty('--zoom-ox', `${ZOOM_LOCALE_CORNER_OX}%`)
+        stage.style.setProperty('--zoom-oy', `${ZOOM_LOCALE_CORNER_OY}%`)
+        stage.style.setProperty('--zoom-scale', String(ZOOM_SCALE_LOCALE))
+      }
+
+      function syncDemoZoomForScrubberStep(step) {
+        const stage = el('demo-zoom-stage')
+        if (!stage) return
+        if ([0, 1, 2, 3, 6, 7, 12, 13].includes(step)) {
+          setDemoZoomImmediate(1, 50, 50)
+          return
+        }
+        if (step === 4 || step === 5) {
+          const tp = el('ticket-panel')
+          if (tp) {
+            const sr = stage.getBoundingClientRect()
+            const er = tp.getBoundingClientRect()
+            if (sr.width > 0 && sr.height > 0) {
+              const oy = ((er.top + er.height / 2 - sr.top) / sr.height) * 100
+              setDemoZoomImmediate(ZOOM_SCALE_TICKET_REVIEW, ZOOM_ORIGIN_X_RIGHT_EDGE, oy)
+            }
+          }
+          return
+        }
+        if (step >= 8 && step <= 11) {
+          const u = (step - 8) / 3
+          const ox = 50 + (ZOOM_LOCALE_CORNER_OX - 50) * u
+          const oy = 50 + (ZOOM_LOCALE_CORNER_OY - 50) * u
+          setDemoZoomImmediate(ZOOM_SCALE_LOCALE, ox, oy)
+        }
+      }
+
+      function setScene(name) {
+        document.querySelectorAll('.scene').forEach((s) => s.classList.remove('active'))
+        const map = {
+          empty: 'scene-empty',
+          workspace: 'scene-workspace',
+          localization: 'scene-localization',
+        }
+        const node = el(map[name])
+        if (node) node.classList.add('active')
+      }
+
+      function setCaption() {
+        /* Footer removed; keep hook for future narration */
+      }
+
+      function drawPlaceholderFrame(ctx, w, h, phase) {
+        const g = ctx.createLinearGradient(0, 0, w, h)
+        g.addColorStop(0, '#12121a')
+        g.addColorStop(1, '#06060c')
+        ctx.fillStyle = g
+        ctx.fillRect(0, 0, w, h)
+        const lines = [
+          'PLEASE SILENCE PHONES',
+          'WELCOME TO THE SHOW',
+          'NOW SHOWING',
+          'EXIT',
+          'DO NOT ENTER',
+          'EMERGENCY EXIT →',
+          '15 MINUTES LATER',
+          'CLOSED',
+        ]
+        const fi = Math.min(lines.length - 1, Math.floor(phase * lines.length))
+        ctx.fillStyle = 'rgba(255,255,255,0.94)'
+        ctx.font = '600 22px Inter, system-ui, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(lines[fi], w / 2, h / 2 - 6)
+        ctx.fillStyle = 'rgba(255,255,255,0.38)'
+        ctx.font = '11px Inter, system-ui, sans-serif'
+        ctx.fillText('TLocal · placeholder reel', w / 2, h / 2 + 22)
+      }
+
+      function captureFramesFromOffscreenCanvas() {
+        const w = 640
+        const h = 360
+        const c = document.createElement('canvas')
+        c.width = w
+        c.height = h
+        const ctx = c.getContext('2d')
+        for (let i = 0; i < 8; i++) {
+          const phase = (i + 0.5) / 8
+          drawPlaceholderFrame(ctx, w, h, phase)
+          VIDEO_FRAMES[i] = c.toDataURL('image/jpeg', 0.88)
+        }
+      }
+
+      function captureVideoFrameAt(video, timeSec) {
+        return new Promise((resolve) => {
+          const w = video.videoWidth || 640
+          const h = video.videoHeight || 360
+          let finished = false
+          const finish = () => {
+            if (finished) return
+            finished = true
+            video.removeEventListener('seeked', onSeeked)
+            const c = document.createElement('canvas')
+            c.width = w
+            c.height = h
+            const ctx = c.getContext('2d')
+            try {
+              ctx.drawImage(video, 0, 0, w, h)
+              resolve(c.toDataURL('image/jpeg', 0.86))
+            } catch {
+              captureFramesFromOffscreenCanvas()
+              resolve(VIDEO_FRAMES[0])
+            }
+          }
+          const onSeeked = () => finish()
+          video.addEventListener('seeked', onSeeked)
+          const dur = video.duration && !Number.isNaN(video.duration) ? video.duration : 1
+          video.currentTime = Math.min(Math.max(0, timeSec), Math.max(0.1, dur - 0.06))
+          setTimeout(finish, 500)
+        })
+      }
+
+      async function recordPlaceholderWebM() {
+        const w = 640
+        const h = 360
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        const durationMs = 6000
+        const fps = 24
+        const stream = canvas.captureStream(fps)
+        const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+          ? 'video/webm;codecs=vp9'
+          : MediaRecorder.isTypeSupported('video/webm')
+            ? 'video/webm'
+            : ''
+        if (!mime || typeof MediaRecorder === 'undefined') throw new Error('No MediaRecorder')
+
+        const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 900000 })
+        const chunks = []
+        rec.ondataavailable = (e) => {
+          if (e.data.size) chunks.push(e.data)
+        }
+        const urlPromise = new Promise((resolve, reject) => {
+          rec.onerror = () => reject(new Error('record error'))
+          rec.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' })
+            resolve(URL.createObjectURL(blob))
+          }
+        })
+        drawPlaceholderFrame(ctx, w, h, 0)
+        rec.start()
+        const t0 = performance.now()
+        const frameMs = 1000 / fps
+        const iv = setInterval(() => {
+          const elapsed = performance.now() - t0
+          const phase = Math.min(1, elapsed / durationMs)
+          drawPlaceholderFrame(ctx, w, h, phase)
+          if (elapsed >= durationMs) {
+            clearInterval(iv)
+            rec.stop()
+          }
+        }, frameMs)
+        return urlPromise
+      }
+
+      function startCanvasFallbackLoop() {
+        stopCanvasFallbackLoop()
+        const cvs = el('demo-canvas-fallback')
+        const vid = el('demo-video')
+        if (!cvs) return
+        vid.classList.add('hidden')
+        cvs.classList.add('visible')
+        const ctx = cvs.getContext('2d')
+        let phase = 0
+        function tick() {
+          phase = (phase + 0.0012) % 1
+          drawPlaceholderFrame(ctx, cvs.width, cvs.height, phase)
+          canvasAnimId = requestAnimationFrame(tick)
+        }
+        canvasAnimId = requestAnimationFrame(tick)
+      }
+
+      function stopCanvasFallbackLoop() {
+        if (canvasAnimId != null) {
+          cancelAnimationFrame(canvasAnimId)
+          canvasAnimId = null
+        }
+        const cvs = el('demo-canvas-fallback')
+        if (cvs) cvs.classList.remove('visible')
+      }
+
+      async function initPlaceholderMedia() {
+        const vid = el('demo-video')
+        captureFramesFromOffscreenCanvas()
+
+        try {
+          const url = await recordPlaceholderWebM()
+          vid.src = url
+          demoVideoBlobUrl = url
+          vid.classList.remove('hidden')
+          stopCanvasFallbackLoop()
+          await new Promise((resolve, reject) => {
+            const t = setTimeout(resolve, 4000)
+            vid.onloadeddata = () => {
+              clearTimeout(t)
+              resolve()
+            }
+            vid.onerror = () => {
+              clearTimeout(t)
+              reject(new Error('video error'))
+            }
+          })
+          const dur = vid.duration && vid.duration > 0 ? vid.duration : 6
+          for (let i = 0; i < 8; i++) {
+            VIDEO_FRAMES[i] = await captureVideoFrameAt(vid, ((i + 0.5) / 8) * dur)
+          }
+        } catch {
+          if (demoVideoBlobUrl) {
+            URL.revokeObjectURL(demoVideoBlobUrl)
+            demoVideoBlobUrl = null
+          }
+          vid.removeAttribute('src')
+          vid.classList.add('hidden')
+          startCanvasFallbackLoop()
+          captureFramesFromOffscreenCanvas()
+        }
+      }
+
+      function setDemoVideoVisible(on) {
+        const vid = el('demo-video')
+        const cvs = el('demo-canvas-fallback')
+        if (!on) {
+          stopCanvasFallbackLoop()
+          if (vid) {
+            vid.pause()
+            vid.classList.add('hidden')
+          }
+          if (cvs) cvs.classList.remove('visible')
+          return
+        }
+        if (vid?.src) {
+          stopCanvasFallbackLoop()
+          vid.classList.remove('hidden')
+          try {
+            void vid.play()
+          } catch {
+            /* ignore */
+          }
+        } else {
+          startCanvasFallbackLoop()
+        }
+      }
+
+      function pause(ms, g) {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve(alive(g)), ms)
+        })
+      }
+
+      function updateQueueCount(shown, total) {
+        const q = el('queue-count')
+        if (q) q.textContent = `${shown} shown · ${total} total`
+      }
+
+      /** Same 1–10 score as app: confidenceToScore10 */
+      function aiScore10(confidence01) {
+        const c = Math.max(0, Math.min(1, Number(confidence01) || 0))
+        return Math.round(c * 100) / 10
+      }
+
+      /** Green ≥7, yellow ≥4, red &lt;4 on 1–10 scale */
+      function confidenceTier01(confidence01) {
+        const s = aiScore10(confidence01)
+        if (s >= 7) return 'high'
+        if (s >= 4) return 'mid'
+        return 'low'
+      }
+
+      function timelineDurationSec() {
+        const maxOut = TICKETS.length ? Math.max(...TICKETS.map((t) => t.outSec)) : 1
+        return Math.max(maxOut * 1.02, 1)
+      }
+
+      let timelineApproveGen = 0
+
+      /** After all tickets approved: stagger mid/low segments to green (demo flourish). */
+      function runTimelineApprovedCelebration() {
+        const gen = ++timelineApproveGen
+        const segHost = el('demo-timeline-segments')
+        if (!segHost) return
+        const segs = [...segHost.querySelectorAll('.demo-timeline-seg')]
+        const staggerMs = 220
+        let animIndex = 0
+        segs.forEach((btn) => {
+          if (btn.classList.contains('tier-high')) return
+          const delay = animIndex * staggerMs
+          animIndex += 1
+          setTimeout(() => {
+            if (gen !== timelineApproveGen || !btn.isConnected) return
+            btn.classList.remove('tier-mid', 'tier-low')
+            btn.classList.add('tier-high')
+          }, delay)
+        })
+      }
+
+      function renderTimeline(currentSec) {
+        timelineApproveGen++
+        const dur = timelineDurationSec()
+        const segHost = el('demo-timeline-segments')
+        const ph = el('demo-timeline-playhead')
+        const tc = el('demo-timeline-tc')
+        if (!segHost) return
+        segHost.innerHTML = ''
+        TICKETS.forEach((t) => {
+          const tier = confidenceTier01(t.confidence)
+          const left = (t.inSec / dur) * 100
+          const width = Math.max(((t.outSec - t.inSec) / dur) * 100, 0.48)
+          const btn = document.createElement('button')
+          btn.type = 'button'
+          btn.className = `demo-timeline-seg tier-${tier}`
+          btn.style.left = `${left}%`
+          btn.style.width = `${width}%`
+          const score = aiScore10(t.confidence)
+          btn.title = `${t.text} · AI ${score.toFixed(1)}/10`
+          segHost.appendChild(btn)
+        })
+        const t = typeof currentSec === 'number' && Number.isFinite(currentSec) ? currentSec : 0
+        if (ph) ph.style.left = `${Math.min(100, Math.max(0, (t / dur) * 100))}%`
+        if (tc) tc.textContent = formatTc(t)
+      }
+
+      function buildTicketRows() {
+        const tbody = el('ticket-rows')
+        tbody.innerHTML = ''
+        TICKETS.forEach((t, i) => {
+          const tr = document.createElement('tr')
+          tr.dataset.id = t.id
+          tr.innerHTML = `
+            <td class="mono">${String(i + 1).padStart(3, '0')}</td>
+            <td class="mono">${formatTc(t.inSec)}</td>
+            <td class="mono">${formatTc(t.outSec)}</td>
+            <td>${t.text}</td>
+            <td><span class="pill">${t.type}</span></td>
+            <td><div class="approve-cell"><span class="chk" data-approve></span></div></td>
+          `
+          tbody.appendChild(tr)
+        })
+        updateQueueCount(TICKETS.length, TICKETS.length)
+      }
+
+      function buildMiniList() {
+        const ul = el('mini-list')
+        ul.innerHTML = ''
+        TICKETS.forEach((t, i) => {
+          const li = document.createElement('li')
+          li.dataset.id = t.id
+          li.innerHTML = `<button type="button"><span class="mono" style="color:var(--text-muted)">#${String(i + 1).padStart(3, '0')}</span><span class="mono">${formatTc(t.inSec)}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.text}</span></button>`
+          ul.appendChild(li)
+        })
+      }
+
+      function animateTeamGridToComplete() {
+        const grid = el('team-grid')
+        if (!grid) return
+        const cards = [...grid.querySelectorAll('.team-card')]
+        const total = TICKETS.length
+        cards.forEach((card, idx) => {
+          setTimeout(() => {
+            const strong = card.querySelector('.stat strong')
+            const bar = card.querySelector('.bar i')
+            if (strong) strong.textContent = `${total}/${total}`
+            if (bar) bar.style.width = '100%'
+          }, idx * TEAM_FINAL_STAGGER_MS)
+        })
+      }
+
+      function buildTeamGrid(progress) {
+        const grid = el('team-grid')
+        grid.classList.remove('is-final-grow')
+        grid.innerHTML = ''
+        LANGS.forEach((L) => {
+          const done = progress[L.code] ?? 0
+          const pct = TICKETS.length === 0 ? 0 : Math.round((done / TICKETS.length) * 100)
+          const card = document.createElement('div')
+          card.className = 'team-card'
+          card.innerHTML = `
+            <p class="team-label">Team</p>
+            <p class="team-name">${L.label}</p>
+            <p class="stat"><strong>${done}/${TICKETS.length}</strong> confirmed</p>
+            <div class="bar"><i style="width:${pct}%"></i></div>
+            <button type="button" data-lang="${L.code}">Open ${L.label} workspace</button>
+          `
+          grid.appendChild(card)
+        })
+      }
+
+      function buildPerspectiveTabs(active) {
+        const tabs = el('perspective-tabs')
+        tabs.innerHTML = ''
+        const mk = (code, label) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.textContent = label
+          b.dataset.perspective = code
+          if (code === active) b.classList.add('active')
+          return b
+        }
+        tabs.appendChild(mk('admin', 'Admin'))
+        LANGS.forEach((L) => tabs.appendChild(mk(L.code, L.label)))
+      }
+
+      function frameUrl(i) {
+        return VIDEO_FRAMES[i] ?? VIDEO_FRAMES[0]
+      }
+
+      function buildTeamRows(langCode) {
+        const tbody = el('team-rows')
+        tbody.innerHTML = ''
+        TICKETS.forEach((t, i) => {
+          const tr = document.createElement('tr')
+          tr.dataset.id = t.id
+          const src = frameUrl(i)
+          tr.innerHTML = `
+            <td class="mono">${i + 1}</td>
+            <td><div class="frame-thumb"><img src="${src}" alt="" /></div></td>
+            <td>${t.text}</td>
+            <td><input class="tx-input" readonly value="" placeholder="…" /></td>
+            <td><div class="mock-slot" data-mock><span class="mock-placeholder">empty</span></div></td>
+            <td><span class="chk" data-team-ok></span></td>
+          `
+          tbody.appendChild(tr)
+        })
+      }
+
+      function fillTeamMock(tr, i, langCode) {
+        const mock = tr.querySelector('[data-mock]')
+        const src = frameUrl(i)
+        mock.classList.add('filled')
+        ;['es', 'zh', 'hi', 'ja', 'fr'].forEach((c) => mock.classList.remove(`mock-lang-${c}`))
+        mock.classList.add(`mock-lang-${langCode}`)
+        mock.innerHTML = `<img src="${src}" alt="" />`
+      }
+
+      let runGen = 0
+      function alive(g) {
+        return g === runGen
+      }
+
+      function highlightScrubber(step) {
+        document.querySelectorAll('#scene-scrubber button[data-scene]').forEach((b) => {
+          b.classList.toggle('active', Number(b.dataset.scene) === step)
+        })
+      }
+
+      /**
+       * Jump to a static snapshot (0–13). Cancels the automated run via runGen.
+       */
+      function applySceneStep(step) {
+        runGen++
+        const progress = { es: 0, zh: 0, ja: 0, hi: 0, fr: 0 }
+
+        document.querySelectorAll('#team-grid .team-card').forEach((c) => {
+          c.style.outline = ''
+        })
+        highlightScrubber(step)
+
+        const resetWorkspaceChrome = () => {
+          el('ph-title').textContent = 'Tickets will appear here'
+          el('ph-sub').textContent = 'Run analysis to extract on-screen text for the full film.'
+          el('analysis-overlay').classList.remove('visible')
+          stopAnalysisAsciiAnimation()
+          el('progress-fill').style.width = '0%'
+          el('mini-tickets').classList.add('hidden')
+          el('demo-timeline').classList.add('hidden')
+          el('table-placeholder').classList.remove('hidden')
+          el('table-wrap').classList.add('hidden')
+          el('table-wrap').classList.remove('reveal-in')
+          el('btn-continue').classList.add('continue-off')
+          updateQueueCount(0, 0)
+        }
+
+        try {
+        if (step === 0) {
+          setDemoVideoVisible(false)
+          el('header-title').textContent = 'untitled_project'
+          el('video-label').textContent = 'No file loaded'
+          resetWorkspaceChrome()
+          setScene('empty')
+          return
+        }
+
+        el('header-title').textContent = 'sample_film.mov'
+        el('video-label').textContent = 'sample_film.mov · preview'
+        setDemoVideoVisible(true)
+
+        if (step === 1) {
+          setScene('workspace')
+          resetWorkspaceChrome()
+          return
+        }
+
+        if (step === 2) {
+          setScene('workspace')
+          el('ph-title').textContent = 'Scanning the full timeline…'
+          el('ph-sub').textContent = 'Processing runs across the entire movie duration (demo).'
+          el('mini-tickets').classList.add('hidden')
+          el('table-placeholder').classList.remove('hidden')
+          el('table-wrap').classList.add('hidden')
+          el('analysis-overlay').classList.add('visible')
+          startAnalysisAsciiAnimation()
+          el('progress-fill').style.width = '45%'
+          el('analysis-status').textContent = ANALYSIS_MESSAGES[1]
+          updateQueueCount(0, 0)
+          el('demo-timeline').classList.add('hidden')
+          return
+        }
+
+        if (step >= 3 && step <= 5) {
+          setScene('workspace')
+          el('analysis-overlay').classList.remove('visible')
+          stopAnalysisAsciiAnimation()
+          el('ph-title').textContent = 'Tickets will appear here'
+          el('ph-sub').textContent = 'Review and approve translator tickets.'
+
+          buildTicketRows()
+          buildMiniList()
+          el('mini-tickets').classList.remove('hidden')
+          el('demo-timeline').classList.remove('hidden')
+          renderTimeline(0)
+          el('table-placeholder').classList.add('hidden')
+          el('table-wrap').classList.remove('hidden')
+          el('table-wrap').classList.add('reveal-in')
+          el('ticket-rows').querySelectorAll('tr').forEach((tr, idx) => {
+            tr.querySelectorAll('[data-approve]').forEach((c) => {
+              c.classList.remove('on')
+              c.textContent = ''
+            })
+            tr.classList.toggle('row-sel', idx === 0)
+          })
+          el('mini-list').querySelectorAll('li').forEach((li, idx) => {
+            li.classList.toggle('sel', idx === 0)
+          })
+
+          if (step === 3) {
+            el('btn-continue').classList.add('continue-off')
+            return
+          }
+
+          if (step === 4) {
+            el('ticket-rows').querySelectorAll('tr').forEach((tr, idx) => {
+              const chk = tr.querySelector('[data-approve]')
+              if (idx < 4) {
+                chk.classList.add('on')
+                chk.textContent = '✓'
+              }
+            })
+            el('btn-continue').classList.add('continue-off')
+            return
+          }
+
+          el('ticket-rows').querySelectorAll('tr').forEach((tr) => {
+            const chk = tr.querySelector('[data-approve]')
+            chk.classList.add('on')
+            chk.textContent = '✓'
+          })
+          el('btn-continue').classList.remove('continue-off')
+          requestAnimationFrame(() => {
+            setTimeout(() => runTimelineApprovedCelebration(), 100)
+          })
+          return
+        }
+
+        setScene('localization')
+        el('loc-admin').classList.remove('hidden')
+        el('loc-team').classList.add('hidden')
+
+        if (step === 6) {
+          buildPerspectiveTabs('admin')
+          buildTeamGrid(progress)
+          return
+        }
+
+        const fillSpanish = () => {
+          buildPerspectiveTabs('es')
+          el('loc-admin').classList.add('hidden')
+          el('loc-team').classList.remove('hidden')
+          el('team-heading').textContent = 'Spanish localization'
+          buildTeamRows('es')
+          el('team-rows').querySelectorAll('tr').forEach((row, i) => {
+            row.querySelector('.tx-input').value = TRANSLATIONS.es[i]
+            row.querySelector('.tx-input').classList.add('filled')
+            fillTeamMock(row, i, 'es')
+            const ok = row.querySelector('[data-team-ok]')
+            ok.classList.add('on')
+            ok.textContent = '✓'
+          })
+          progress.es = TICKETS.length
+        }
+
+        const fillChinese = () => {
+          buildPerspectiveTabs('zh')
+          el('team-heading').textContent = 'Chinese localization'
+          buildTeamRows('zh')
+          el('team-rows').querySelectorAll('tr').forEach((row, i) => {
+            row.querySelector('.tx-input').value = TRANSLATIONS.zh[i]
+            row.querySelector('.tx-input').classList.add('filled')
+            fillTeamMock(row, i, 'zh')
+            const ok = row.querySelector('[data-team-ok]')
+            ok.classList.add('on')
+            ok.textContent = '✓'
+          })
+          progress.zh = TICKETS.length
+        }
+
+        const fillHindi = () => {
+          buildPerspectiveTabs('hi')
+          el('team-heading').textContent = 'Hindi localization'
+          buildTeamRows('hi')
+          el('team-rows').querySelectorAll('tr').forEach((row, i) => {
+            row.querySelector('.tx-input').value = TRANSLATIONS.hi[i]
+            row.querySelector('.tx-input').classList.add('filled')
+            fillTeamMock(row, i, 'hi')
+            const ok = row.querySelector('[data-team-ok]')
+            ok.classList.add('on')
+            ok.textContent = '✓'
+          })
+          progress.hi = TICKETS.length
+        }
+
+        const fillJapanese = () => {
+          buildPerspectiveTabs('ja')
+          el('team-heading').textContent = 'Japanese localization'
+          buildTeamRows('ja')
+          el('team-rows').querySelectorAll('tr').forEach((row, i) => {
+            row.querySelector('.tx-input').value = TRANSLATIONS.ja[i]
+            row.querySelector('.tx-input').classList.add('filled')
+            fillTeamMock(row, i, 'ja')
+            const ok = row.querySelector('[data-team-ok]')
+            ok.classList.add('on')
+            ok.textContent = '✓'
+          })
+          progress.ja = TICKETS.length
+        }
+
+        const fillFrench = () => {
+          buildPerspectiveTabs('fr')
+          el('team-heading').textContent = 'French localization'
+          buildTeamRows('fr')
+          el('team-rows').querySelectorAll('tr').forEach((row, i) => {
+            row.querySelector('.tx-input').value = TRANSLATIONS.fr[i]
+            row.querySelector('.tx-input').classList.add('filled')
+            fillTeamMock(row, i, 'fr')
+            const ok = row.querySelector('[data-team-ok]')
+            ok.classList.add('on')
+            ok.textContent = '✓'
+          })
+          progress.fr = TICKETS.length
+        }
+
+        if (step === 7) {
+          fillSpanish()
+          return
+        }
+
+        if (step === 8) {
+          progress.es = TICKETS.length
+          fillChinese()
+          return
+        }
+
+        if (step === 9) {
+          progress.es = TICKETS.length
+          progress.zh = TICKETS.length
+          fillJapanese()
+          return
+        }
+
+        if (step === 10) {
+          progress.es = TICKETS.length
+          progress.zh = TICKETS.length
+          progress.ja = TICKETS.length
+          fillHindi()
+          return
+        }
+
+        if (step === 11) {
+          progress.es = TICKETS.length
+          progress.zh = TICKETS.length
+          progress.ja = TICKETS.length
+          progress.hi = TICKETS.length
+          fillFrench()
+          return
+        }
+
+        if (step === 12) {
+          progress.es = TICKETS.length
+          progress.zh = TICKETS.length
+          progress.ja = TICKETS.length
+          progress.hi = TICKETS.length
+          progress.fr = TICKETS.length
+          el('loc-team').classList.add('hidden')
+          el('loc-admin').classList.remove('hidden')
+          buildPerspectiveTabs('admin')
+          buildTeamGrid(progress)
+          return
+        }
+
+        if (step === 13) {
+          const empty = { es: 0, zh: 0, ja: 0, hi: 0, fr: 0 }
+          el('loc-team').classList.add('hidden')
+          el('loc-admin').classList.remove('hidden')
+          buildPerspectiveTabs('admin')
+          buildTeamGrid(empty)
+          el('team-grid').classList.add('is-final-grow')
+          requestAnimationFrame(() => {
+            setTimeout(() => animateTeamGridToComplete(), 60)
+            setTimeout(() => {
+              el('team-grid').querySelectorAll('.team-card').forEach((card) => {
+                card.style.outline = '1px solid var(--border-strong)'
+              })
+            }, TEAM_FINAL_ANIM_HOLD_MS + 80)
+          })
+        }
+        } finally {
+          setTimeout(() => syncDemoZoomForScrubberStep(step), 0)
+        }
+      }
+
+      function buildSceneScrubber() {
+        const host = el('scene-scrubber')
+        host.querySelectorAll('button[data-scene]').forEach((b) => b.remove())
+        SCENE_LABELS.forEach((label, idx) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.dataset.scene = String(idx)
+          b.textContent = label
+          b.addEventListener('click', () => applySceneStep(idx))
+          host.appendChild(b)
+        })
+      }
+
+      async function runLocWorkspaceDemoStep(g, progress, spec, langIndex) {
+        if (langIndex === 0) {
+          setDemoZoomImmediate(1, 50, 50)
+        } else if (langIndex === 1) {
+          startLocaleZoomSmoothPan()
+        }
+
+        buildPerspectiveTabs(spec.code)
+        el('loc-admin').classList.add('hidden')
+        el('loc-team').classList.remove('hidden')
+        el('team-heading').textContent = spec.label
+        buildTeamRows(spec.code)
+        const tlist = TRANSLATIONS[spec.code]
+        const rows = el('team-rows').querySelectorAll('tr')
+        for (let i = 0; i < rows.length; i++) {
+          if (!alive(g)) return false
+          const tr = rows[i]
+          tr.querySelector('.tx-input').value = tlist[i]
+          tr.querySelector('.tx-input').classList.add('filled')
+          fillTeamMock(tr, i, spec.code)
+          if (spec.kind === 'two') {
+            if (!(await pause(spec.p1, g))) return false
+            tr.querySelector('[data-team-ok]').classList.add('on')
+            tr.querySelector('[data-team-ok]').textContent = '✓'
+            if (!(await pause(spec.p2, g))) return false
+          } else {
+            tr.querySelector('[data-team-ok]').classList.add('on')
+            tr.querySelector('[data-team-ok]').textContent = '✓'
+            if (!(await pause(spec.row, g))) return false
+          }
+        }
+        progress[spec.code] = TICKETS.length
+        return true
+      }
+
+      async function runDemo() {
+        const g = ++runGen
+        const progress = { es: 0, zh: 0, ja: 0, hi: 0, fr: 0 }
+
+        setDemoVideoVisible(false)
+        el('header-title').textContent = 'untitled_project'
+        el('video-label').textContent = 'No file loaded'
+        el('analysis-overlay').classList.remove('visible')
+        stopAnalysisAsciiAnimation()
+        el('progress-fill').style.width = '0%'
+        el('mini-tickets').classList.add('hidden')
+        el('demo-timeline').classList.add('hidden')
+        el('table-placeholder').classList.remove('hidden')
+        el('table-wrap').classList.remove('reveal-in')
+        el('table-wrap').classList.add('hidden')
+        el('btn-continue').classList.add('continue-off')
+        el('ph-title').textContent = 'Tickets will appear here'
+        el('ph-sub').textContent = 'Run analysis to extract on-screen text for the full film.'
+        updateQueueCount(0, 0)
+
+        document.querySelectorAll('#team-grid .team-card').forEach((c) => {
+          c.style.outline = ''
+        })
+        el('team-grid').classList.remove('is-final-grow')
+
+        setDemoZoomImmediate(1, 50, 50)
+
+        setScene('empty')
+        setCaption()
+        startZoomToUploadDuring(ZOOM_TO_UPLOAD_MS)
+
+        if (!(await pause(500, g))) return
+
+        setCaption()
+        if (!(await pause(700, g))) return
+
+        el('header-title').textContent = 'sample_film.mov'
+        el('video-label').textContent = 'sample_film.mov · stream preview (simulated)'
+        setScene('workspace')
+        setDemoVideoVisible(true)
+        setCaption()
+
+        el('ph-title').textContent = 'Scanning the full timeline…'
+        el('ph-sub').textContent = 'Processing runs across the entire movie duration (demo).'
+        el('analysis-overlay').classList.add('visible')
+        startAnalysisAsciiAnimation()
+        startZoomResetDuring(ANALYSIS_DURATION_MS)
+
+        const durationMs = ANALYSIS_DURATION_MS
+        const start = Date.now()
+        await new Promise((resolve) => {
+          const tick = () => {
+            if (!alive(g)) return resolve()
+            const t = Math.min(1, (Date.now() - start) / durationMs)
+            el('progress-fill').style.width = `${analysisBarDisplayRatio(t) * 100}%`
+            const mi = Math.min(ANALYSIS_MESSAGES.length - 1, Math.floor(t * ANALYSIS_MESSAGES.length))
+            el('analysis-status').textContent = ANALYSIS_MESSAGES[mi]
+            el('analysis-eta').textContent = '~' + Math.max(0, Math.ceil((durationMs - (Date.now() - start)) / 1000)) + 's'
+            if (t < 1) requestAnimationFrame(tick)
+            else resolve()
+          }
+          tick()
+        })
+        if (!alive(g)) return
+
+        el('progress-fill').style.width = '100%'
+        el('analysis-status').textContent = ANALYSIS_MESSAGES[ANALYSIS_MESSAGES.length - 1]
+        el('analysis-overlay').classList.remove('visible')
+        stopAnalysisAsciiAnimation()
+        setCaption()
+
+        buildTicketRows()
+        buildMiniList()
+        el('mini-tickets').classList.remove('hidden')
+        el('demo-timeline').classList.remove('hidden')
+        renderTimeline(0)
+        el('table-placeholder').classList.add('hidden')
+        const tw = el('table-wrap')
+        tw.classList.remove('hidden')
+        tw.classList.add('reveal-in')
+
+        el('mini-list').querySelectorAll('li').forEach((li, idx) => {
+          li.classList.toggle('sel', idx === 0)
+        })
+        el('ticket-rows').querySelectorAll('tr').forEach((tr, idx) => {
+          tr.classList.toggle('row-sel', idx === 0)
+        })
+
+        if (!(await pause(TICKETS_REVEAL_PAUSE_MS, g))) return
+
+        setCaption()
+
+        const rows = el('ticket-rows').querySelectorAll('tr')
+        const approveZoomMs = rows.length * APPROVE_STAGGER_MS
+        startZoomToTicketPanelDuring(approveZoomMs)
+
+        for (let i = 0; i < rows.length; i++) {
+          if (!alive(g)) return
+          const chk = rows[i].querySelector('[data-approve]')
+          chk.classList.add('on')
+          chk.textContent = '✓'
+          if (!(await pause(APPROVE_STAGGER_MS, g))) return
+        }
+
+        el('btn-continue').classList.remove('continue-off')
+        requestAnimationFrame(() => {
+          setTimeout(() => runTimelineApprovedCelebration(), 100)
+        })
+        setCaption()
+
+        if (!(await pause(POST_APPROVE_PAUSE_MS, g))) return
+
+        setScene('localization')
+        el('loc-admin').classList.remove('hidden')
+        el('loc-team').classList.add('hidden')
+        buildPerspectiveTabs('admin')
+        buildTeamGrid(progress)
+        setCaption()
+
+        startZoomResetDuring(ADMIN_LOC_HOLD_MS)
+
+        if (!(await pause(ADMIN_LOC_HOLD_MS, g))) return
+
+        setCaption()
+        for (let li = 0; li < LOC_DEMO_SPECS.length; li++) {
+          const ok = await runLocWorkspaceDemoStep(g, progress, LOC_DEMO_SPECS[li], li)
+          if (!ok) return
+          if (li < LOC_GAP_AFTER_LANG_MS.length) {
+            if (!(await pause(LOC_GAP_AFTER_LANG_MS[li], g))) return
+          }
+          setCaption()
+        }
+
+        startFinalSceneZoomOutFromLocaleCorner(FINAL_SCENE_ZOOM_OUT_MS, FINAL_SCENE_ZOOM_OUT_EASE)
+
+        buildPerspectiveTabs('admin')
+        el('loc-team').classList.add('hidden')
+        el('loc-admin').classList.remove('hidden')
+        buildTeamGrid({ es: 0, zh: 0, ja: 0, hi: 0, fr: 0 })
+        el('team-grid').classList.add('is-final-grow')
+        requestAnimationFrame(() => {
+          setTimeout(() => animateTeamGridToComplete(), 60)
+        })
+        if (!(await pause(TEAM_FINAL_ANIM_HOLD_MS, g))) return
+
+        el('team-grid').querySelectorAll('.team-card').forEach((card) => {
+          card.style.outline = '1px solid var(--border-strong)'
+        })
+        if (!(await pause(FINAL_SCENE_TAIL_MS, g))) return
+
+        setCaption()
+      }
+
+      el('btn-replay').addEventListener('click', () => {
+        runDemo()
+      })
+
+      buildTeamGrid({ es: 0, zh: 0, ja: 0, hi: 0, fr: 0 })
+      buildSceneScrubber()
+      initPlaceholderMedia()
+        .catch(() => {})
+        .finally(() => {
+          runDemo()
+        })
+    })()
+  </script>
+</body>
+</html>

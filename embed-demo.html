@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en" class="embed-demo-page">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TLocal — demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/product-demo.css" />
+  <style>
+    /* Fill the landing iframe so .page-demo min-height and 100svh match the iframe box (same math as full-window demo). */
+    html,
+    body.embed-demo-body {
+      height: 100%;
+      margin: 0;
+    }
+  </style>
+</head>
+<body class="embed-demo-body">
+  <div class="page-demo">
+    <div class="demo-zoom-viewport" id="demo-zoom-viewport">
+      <div class="demo-zoom-stage" id="demo-zoom-stage">
+    <div class="demo-frame" id="demo-frame">
+      <div class="app">
+        <div class="main">
+          <header class="header">
+            <button type="button" class="header-back" id="btn-back" aria-label="Back to home" tabindex="-1">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            <div class="header-title-wrap">
+              <h1 id="header-title">untitled_project</h1>
+              <button type="button" class="header-rename" aria-label="Rename project" tabindex="-1">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <div class="body-scroll">
+            <div class="scene-stack">
+              <!-- Empty -->
+              <section class="scene active" id="scene-empty">
+                <div class="empty-wrap">
+                  <h2>On-screen text for full films</h2>
+                  <p>
+                    Built for entire movies and long programs. Upload a film file to extract signs,
+                    subtitles, credits, and graphics as reviewable tickets across the full runtime.
+                  </p>
+                  <div class="card" id="upload-card">
+                    <h3>Upload new</h3>
+                    <button type="button" class="btn-primary" id="btn-upload">Upload movie file</button>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Workspace: review -->
+              <section class="scene workspace" id="scene-workspace">
+                <div class="col-video">
+                  <div class="video-shell" id="video-shell">
+                    <video
+                      id="demo-video"
+                      class="demo-video-el hidden"
+                      muted
+                      playsinline
+                      loop
+                      preload="auto"
+                      aria-label="Placeholder programme video"
+                    ></video>
+                    <canvas id="demo-canvas-fallback" width="640" height="360" aria-hidden="true"></canvas>
+                    <div class="video-filmstrip"></div>
+                    <div class="video-label" id="video-label">No file loaded</div>
+                    <div class="analysis-overlay" id="analysis-overlay">
+                      <p class="status" id="analysis-status">Decoding frames…</p>
+                      <div class="progress-track">
+                        <div class="progress-fill" id="progress-fill"></div>
+                      </div>
+                      <p class="analysis-meta"><span id="analysis-eta">~12s</span> · full-timeline scan (simulated)</p>
+                    </div>
+                  </div>
+
+                  <div class="demo-timeline hidden" id="demo-timeline" aria-label="Ticket timeline by time and AI confidence">
+                    <div class="demo-timeline-head">
+                      <strong>Timeline</strong>
+                      <span class="mono" id="demo-timeline-tc">00:00:00:00</span>
+                    </div>
+                    <div class="demo-timeline-track" id="demo-timeline-track">
+                      <div class="demo-timeline-segments" id="demo-timeline-segments"></div>
+                      <div class="demo-timeline-playhead" id="demo-timeline-playhead" style="left: 0%"></div>
+                    </div>
+                    <div class="demo-timeline-legend">
+                      <span><i class="lg" aria-hidden="true"></i> High (≥7/10)</span>
+                      <span><i class="md" aria-hidden="true"></i> Mid (4–7)</span>
+                      <span><i class="lr" aria-hidden="true"></i> Low (&lt;4)</span>
+                    </div>
+                  </div>
+
+                  <div class="mini-tickets hidden" id="mini-tickets">
+                    <div class="mt-head">Tickets</div>
+                    <ul id="mini-list"></ul>
+                  </div>
+                </div>
+
+                <div class="col-table">
+                  <div class="ticket-panel" id="ticket-panel">
+                    <div class="ticket-toolbar-head">
+                      <div>
+                        <h2>Translator review queue</h2>
+                        <p class="sub" id="queue-count">0 shown · 0 total</p>
+                      </div>
+                      <div class="ticket-toolbar-actions">
+                        <div style="display: flex; gap: 4px; border-right: 1px solid var(--border); padding-right: 8px; margin-right: 4px">
+                          <button type="button" class="btn-ticket" disabled title="Undo (⌘Z)">
+                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 6 6v0" />
+                            </svg>
+                            Undo
+                          </button>
+                          <button type="button" class="btn-ticket" disabled title="Redo (⌘⇧Z)">
+                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0-6 6v0" />
+                            </svg>
+                            Redo
+                          </button>
+                        </div>
+                        <button type="button" class="btn-ticket">Add ticket</button>
+                        <button type="button" class="btn-primary continue-off" id="btn-continue" style="padding: 6px 12px; font-size: 12px">
+                          Continue to next step
+                        </button>
+                        <button type="button" class="btn-ticket">Export ▾</button>
+                      </div>
+                    </div>
+                    <div class="placeholder-panel" id="table-placeholder">
+                      <div class="placeholder-panel-stack">
+                        <div class="placeholder-ascii-wrap hidden" id="ph-ascii-wrap" aria-hidden="true">
+                          <div class="placeholder-ascii-viewport" id="ph-ascii-viewport">
+                            <pre class="placeholder-ascii-cube" id="analysis-ascii-cube"></pre>
+                          </div>
+                        </div>
+                        <p id="ph-title">Tickets will appear here</p>
+                        <p class="sub" id="ph-sub">Run analysis to extract on-screen text for the full film.</p>
+                      </div>
+                    </div>
+                    <div class="table-wrap hidden" id="table-wrap">
+                      <table class="demo-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>In</th>
+                            <th>Out</th>
+                            <th>Detected text</th>
+                            <th>Type</th>
+                            <th>Approved</th>
+                          </tr>
+                        </thead>
+                        <tbody id="ticket-rows"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Localization -->
+              <section class="scene" id="scene-localization" style="padding: 10px 14px 14px">
+                <div class="loc-bar" id="loc-bar">
+                  <div>
+                    <button type="button" class="btn-ghost" style="margin-bottom: 8px" id="btn-loc-back" tabindex="-1">
+                      ← Back to review
+                    </button>
+                    <h2>Localization step</h2>
+                    <p class="hint">Demo: switch perspectives as if you signed in as admin or a language team.</p>
+                  </div>
+                  <div>
+                    <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); display: block; margin-bottom: 4px">View as</span>
+                    <div class="tabs" id="perspective-tabs"></div>
+                  </div>
+                </div>
+
+                <div id="loc-admin">
+                  <div class="team-grid" id="team-grid"></div>
+                  <p style="margin-top: 16px; font-size: 12px; font-weight: 500; color: var(--text-primary)">
+                    Per-string status (approved tickets only)
+                  </p>
+                  <p style="margin-top: 6px; font-size: 12px; color: var(--text-muted)">
+                    Each team translates strings and attaches a mock still. Progress fills as teams confirm.
+                  </p>
+                </div>
+
+                <div id="loc-team" class="hidden">
+                  <div style="border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 12px 16px; margin-bottom: 10px">
+                    <h2 style="margin: 0; font-size: 13px; font-weight: 600" id="team-heading">Spanish localization</h2>
+                    <p style="margin: 6px 0 0; font-size: 12px; color: var(--text-muted)">
+                      Use context from the frame, enter a translation, add a mock image, then confirm.
+                    </p>
+                  </div>
+                  <div class="team-table-wrap" id="team-workspace-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Frame</th>
+                          <th>Detected</th>
+                          <th>Translation</th>
+                          <th>Mock</th>
+                          <th>Confirm</th>
+                        </tr>
+                      </thead>
+                      <tbody id="team-rows"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    window.TLOCAL_DEMO_OPTS = { showScrubber: false, loop: true }
+  </script>
+  <script src="js/product-demo.js" defer></script>
+</body>
+</html>
