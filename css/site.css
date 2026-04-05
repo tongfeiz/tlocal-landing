@@ -1012,6 +1012,16 @@ h2.section-title {
   pointer-events: none;
 }
 
+@media (max-width: 760px) {
+  /*
+   * Let touches hit the iframe document so pan-y + overscroll chaining (product-demo.css) can
+   * scroll the parent page; pointer-events: none breaks this on many mobile browsers.
+   */
+  .demo-scale-wrap iframe {
+    pointer-events: auto;
+  }
+}
+
 /* About, privacy, terms */
 .simple-page {
   width: 100%;
