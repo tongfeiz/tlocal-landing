@@ -134,7 +134,9 @@
                         Here’s how it works—from your source file to localized on-screen copy in one system,
                         without spreadsheets or disconnected tools.
                       </p>
-                      <div class="flow-placeholder-frame" aria-hidden="true"></div>
+                      <div class="flow-placeholder-frame" id="flow-liquid-frame" aria-hidden="true">
+                        <canvas></canvas>
+                      </div>
                     </div>
                   </div>
                 </aside>
@@ -433,6 +435,7 @@
     <script src="js/lerp-scroll.js" defer></script>
     <script src="js/landing-cube.js" defer></script>
     <script src="js/workspace-dot-grid.js" defer></script>
+    <script src="js/flow-liquid.js" defer></script>
     <script>
       document.getElementById('y').textContent = String(new Date().getFullYear());
 
