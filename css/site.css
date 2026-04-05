@@ -76,7 +76,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 20px;
+  gap: 32px;
 }
 
 .site-logo {
@@ -104,7 +104,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px 18px;
+  gap: 28px;
 }
 
 .site-nav a:not(.btn) {
@@ -147,6 +147,29 @@ body {
   color: var(--bg);
 }
 
+@media (max-width: 760px) {
+  .site-header-inner {
+    flex-wrap: nowrap;
+    gap: 12px 16px;
+  }
+
+  .site-nav {
+    flex-wrap: nowrap;
+    gap: 14px 18px;
+    min-width: 0;
+  }
+
+  .site-header .site-nav a[href*='features-heading'],
+  .site-header .site-nav a[href*='workflow-heading'] {
+    display: none;
+  }
+
+  .site-header .btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
 #features-heading,
 #workflow-heading,
 #cta-heading {
@@ -170,6 +193,10 @@ body {
   width: 100%;
   margin-inline: auto;
   overflow: visible;
+}
+
+.landing-hero-block {
+  width: 100%;
 }
 
 .landing-intro {
@@ -261,12 +288,7 @@ h1 {
 .partners-logos li {
   display: flex;
   align-items: center;
-  opacity: 0.62;
-  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.partners-logos li:hover {
-  opacity: 1;
+  cursor: pointer;
 }
 
 .partners-logos img {
@@ -275,12 +297,15 @@ h1 {
   width: auto;
   max-width: min(176px, 40vw);
   object-fit: contain;
+  opacity: 0.72;
+  transition:
+    opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    filter 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .partners-logos li {
-    transition-duration: 0.22s;
-  }
+.partners-logos li:hover img {
+  opacity: 1;
+  filter: brightness(0.42);
 }
 
 @media (max-width: 560px) {
@@ -576,13 +601,20 @@ h2.section-title {
   min-width: 0;
 }
 
-/* Scroll-linked fade: mask updated from JS to match left column (eyebrow → placeholder) */
+/* Scroll-linked fade: mask from JS — top fade only when list sits above .flow-visual-col top */
 .flow-steps-wrap {
   min-width: 0;
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
+}
+
+@media (min-width: 761px) {
+  .flow-section .flow-steps-wrap {
+    /* Start the step list slightly lower so the top fade feels less abrupt vs the left column */
+    padding-top: clamp(28px, 5vw, 52px);
+  }
 }
 
 .flow-visual-col {
@@ -700,13 +732,6 @@ h2.section-title {
 
   .flow-steps li {
     padding: clamp(18px, 3vw, 24px) 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .flow-section .flow-steps-wrap {
-    -webkit-mask-image: none !important;
-    mask-image: none !important;
   }
 }
 
@@ -1133,8 +1158,6 @@ h2.section-title {
   overflow: hidden;
   border-radius: 8px;
   /* Grayscale on wrapper so `transform` on the img still works (filter+transform on same node breaks zoom in WebKit) */
-  filter: grayscale(100%);
-  -webkit-filter: grayscale(100%);
 }
 
 .about-team__img {
@@ -1154,17 +1177,7 @@ h2.section-title {
 }
 
 .about-team__link:hover .about-team__img {
-  transform: scale3d(1.12, 1.12, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .about-team__img {
-    transition: none;
-  }
-
-  .about-team__link:hover .about-team__img {
-    transform: scale3d(1, 1, 1);
-  }
+  transform: scale3d(1.05, 1.05, 1);
 }
 
 .simple-page__body--about ul.about-team__names {
@@ -1256,19 +1269,54 @@ main.landing-column > .site-footer {
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .stagger-scope .stagger-item {
-    opacity: 0;
-    transform: translate3d(0, 16px, 0);
+/* Section entrance stagger (see @media (prefers-reduced-motion: reduce) below for OS “Reduce motion”). */
+.stagger-scope .stagger-item {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+
+/* Logo <li> is the stagger target; no transition on li so keyframe opacity wins (hover uses img filter). */
+.stagger-scope .partners-logos li.stagger-item {
+  transition: none;
+}
+
+.stagger-scope.is-stagger-visible .stagger-item {
+  animation: stagger-fade-in 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--stagger-i, 0) * 0.052s);
+}
+
+/* Testimonial cards: slightly longer run + spacing between bubbles */
+.stagger-scope.partners-section.is-stagger-visible .review-card.stagger-item {
+  animation-duration: 0.7s;
+  animation-delay: calc(var(--stagger-i, 0) * 0.068s);
+}
+
+/*
+ * macOS “Reduce motion” / prefers-reduced-motion: reduce — Chrome & Safari may still throttle or
+ * zero-out motion. Re-assert the same rules inside this media query with !important so the site
+ * keeps full motion (explicit product choice for this marketing site).
+ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: smooth !important;
   }
 
-  /* Partner logo rows also use opacity transitions; disable so keyframe stagger wins */
+  .stagger-scope:not(.is-stagger-visible) .stagger-item {
+    opacity: 0 !important;
+    transform: translate3d(0, 16px, 0) !important;
+  }
+
   .stagger-scope .partners-logos li.stagger-item {
-    transition: none;
+    transition: none !important;
   }
 
   .stagger-scope.is-stagger-visible .stagger-item {
-    animation: stagger-fade-in 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
-    animation-delay: calc(var(--stagger-i, 0) * 0.052s);
+    animation: stagger-fade-in 0.58s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+    animation-delay: calc(var(--stagger-i, 0) * 0.052s) !important;
+  }
+
+  .stagger-scope.partners-section.is-stagger-visible .review-card.stagger-item {
+    animation-duration: 0.9s !important;
+    animation-delay: calc(var(--stagger-i, 0) * 0.1s) !important;
   }
 }

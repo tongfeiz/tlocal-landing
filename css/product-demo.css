@@ -885,6 +885,12 @@ table.demo-table tr.row-sel td {
   transform-origin: top center;
 }
 
+@media (max-width: 760px) {
+  .placeholder-ascii-wrap {
+    display: none !important;
+  }
+}
+
 .ticket-panel > .placeholder-panel {
   margin: 0 16px 16px;
   border: 1px dashed var(--border);

@@ -10,9 +10,9 @@
   <body>
     <header class="site-header">
       <div class="site-header-shell">
-        <div class="site-header-inner" style="display: flex; align-items: center; gap: 32px;">
+        <div class="site-header-inner">
           <a class="site-logo" href="index.html">tlocal</a>
-          <nav class="site-nav" aria-label="Primary" style="display: flex; gap: 28px;">
+          <nav class="site-nav" aria-label="Primary">
             <a href="index.html#features-heading">features</a>
             <a href="index.html#workflow-heading">flow</a>
             <a href="about.html">about</a>
@@ -29,18 +29,20 @@
     </header>
     <div class="shell">
       <main class="landing-column">
-        <div class="landing-intro">
-          <div class="hero-text-column">
-            <h1>Accelerating content localization</h1>
-            <p class="lede">
-              A collaborative workspace to extract, review, and localize on-screen text,<br />
-              built for translator teams and long-form video.
-            </p>
+        <div class="landing-hero-block">
+          <div class="landing-intro">
+            <div class="hero-text-column">
+              <h1>Accelerating content localization</h1>
+              <p class="lede">
+                A collaborative workspace to extract, review, and localize on-screen text,<br />
+                built for translator teams and long-form video.
+              </p>
+            </div>
           </div>
-        </div>
-        <div class="demo-frame">
-          <div class="demo-scale-wrap">
-            <iframe src="embed-demo.html" title="TLocal product demo" loading="lazy"></iframe>
+          <div class="demo-frame">
+            <div class="demo-scale-wrap">
+              <iframe src="embed-demo.html" title="TLocal product demo" loading="lazy"></iframe>
+            </div>
           </div>
         </div>
 
@@ -439,12 +441,9 @@
         if (!track || !row) return;
         var visualCol = track.querySelector('.flow-visual-col');
         var stickyStack = track.querySelector('.flow-visual-sticky');
-        var flowEyebrow = visualCol ? visualCol.querySelector('.section-eyebrow') : null;
-        var flowPlaceholder = visualCol ? visualCol.querySelector('.flow-placeholder-frame') : null;
         var stepsWrap = document.getElementById('flow-steps-wrap');
 
         var narrow = window.matchMedia('(max-width: 760px)');
-        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
         var headerEl = document.querySelector('.site-header');
         var root = document.documentElement;
         var fadeTick = false;
@@ -454,42 +453,43 @@
         }
 
         function updateFlowStepsMask() {
-          if (!stepsWrap || !flowEyebrow || !flowPlaceholder) return;
-          if (narrow.matches || reduceMotion.matches) {
+          if (!stepsWrap || !visualCol) return;
+          if (narrow.matches) {
             stepsWrap.style.maskImage = '';
             stepsWrap.style.webkitMaskImage = '';
             return;
           }
-          var winTop = flowEyebrow.getBoundingClientRect().top;
-          var winBottom = flowPlaceholder.getBoundingClientRect().bottom;
-          var winH = winBottom - winTop;
+          /* Top edge of the left flow column (eyebrow / title / lede / placeholder). Fade only when the
+           * steps list extends above that line (ys > 0 in steps-wrap coordinates). No bottom fade. */
           var W = stepsWrap.getBoundingClientRect();
           var h = Math.max(1, W.height);
-          var ys = winTop - W.top;
-          var ye = winBottom - W.top;
-          var fade = Math.max(24, Math.min(88, winH * 0.12));
+          var flowTop = visualCol.getBoundingClientRect().top;
+          var ys = flowTop - W.top;
+          /* Wider, eased ramp so the fade reads softer (multi-stop luminance mask) */
+          var fade = Math.max(56, Math.min(160, h * 0.18));
 
-          if (winH < 24 || ye <= 0 || ys >= h) {
-            var hidden = 'linear-gradient(to bottom, transparent 0px, transparent ' + h + 'px)';
-            stepsWrap.style.webkitMaskImage = hidden;
-            stepsWrap.style.maskImage = hidden;
+          /* No fade if list aligns at/under the flow column top, or the flow block sits entirely below this list */
+          if (ys <= 0 || ys >= h) {
+            stepsWrap.style.webkitMaskImage = '';
+            stepsWrap.style.maskImage = '';
             return;
           }
 
-          var a = Math.min(h, ys + fade);
-          var b = Math.max(0, ye - fade);
-          if (a > b) {
-            var mid = (Math.max(0, ys) + Math.min(h, ye)) * 0.5;
-            a = Math.max(0, mid - 2);
-            b = Math.min(h, mid + 2);
-          }
-          /* mask: white = show list, transparent = fade (luminance/alpha) */
+          var a0 = Math.min(h, ys + fade * 0.22);
+          var a1 = Math.min(h, ys + fade * 0.55);
+          var a2 = Math.min(h, ys + fade);
           var grad =
-            'linear-gradient(to bottom, transparent 0px, #fff ' +
-            a +
+            'linear-gradient(to bottom, ' +
+            'transparent 0px, ' +
+            'rgba(255,255,255,0.18) ' +
+            a0 +
+            'px, ' +
+            'rgba(255,255,255,0.62) ' +
+            a1 +
+            'px, ' +
+            '#fff ' +
+            a2 +
             'px, #fff ' +
-            b +
-            'px, transparent ' +
             h +
             'px)';
           stepsWrap.style.webkitMaskImage = grad;
@@ -536,7 +536,6 @@
         window.addEventListener('resize', layout);
         window.addEventListener('scroll', scheduleFlowFade, { passive: true });
         narrow.addEventListener('change', layout);
-        reduceMotion.addEventListener('change', scheduleFlowFade);
 
         layout();
         window.addEventListener('load', function () {
@@ -555,6 +554,7 @@
           });
           if (stepsWrap) ro.observe(stepsWrap);
           if (stickyStack) ro.observe(stickyStack);
+          if (visualCol) ro.observe(visualCol);
         }
       })();
     </script>

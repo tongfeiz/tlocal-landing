@@ -16,7 +16,6 @@
   var card3 = cards[2]
 
   var narrow = window.matchMedia('(max-width: 760px)')
-  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   var headerEl = document.querySelector('.site-header')
 
   var targetVariant = 1
@@ -134,8 +133,7 @@
    */
   function oceanHeight(u, v, tMs, P) {
     var s = P.swell
-    var calm = reduceMotion.matches ? 0.88 : 1
-    var a = P.oceanAmp * calm * 1.18
+    var a = P.oceanAmp * 1.18
     var sec = tMs * 0.001
     /* Angular evolution (rad/s scale — slow fluid web) */
     var p1 = sec * 0.76
@@ -170,8 +168,7 @@
     resize()
 
     var now = performance.now()
-    var vb = reduceMotion.matches ? 1 : 0.08
-    variantBlend += (targetVariant - variantBlend) * vb
+    variantBlend += (targetVariant - variantBlend) * 0.08
     var tVar = variantBlend
     var P = mixWaveParams(Math.max(1, Math.min(3, tVar)))
 
@@ -186,7 +183,7 @@
     var rows = gr.rows
     var cellW = w / cols
     var cellH = h / rows
-    var vertScale = h * (reduceMotion.matches ? 0.1 : 0.125)
+    var vertScale = h * 0.125
 
     ctx.clearRect(0, 0, w, h)
     ctx.textAlign = 'center'
@@ -271,8 +268,6 @@
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) kick()
   })
-
-  reduceMotion.addEventListener('change', kick)
 
   if (typeof ResizeObserver !== 'undefined') {
     ro = new ResizeObserver(function () {

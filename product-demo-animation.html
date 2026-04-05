@@ -920,6 +920,12 @@
       transform-origin: top center;
     }
 
+    @media (max-width: 760px) {
+      .placeholder-ascii-wrap {
+        display: none !important;
+      }
+    }
+
     .ticket-panel > .placeholder-panel {
       margin: 0 16px 16px;
       border: 1px dashed var(--border);
@@ -1694,6 +1700,7 @@
 
       function startAnalysisAsciiAnimation() {
         if (analysisAsciiTimer != null) return
+        if (window.matchMedia('(max-width: 760px)').matches) return
         const wrap = document.getElementById('ph-ascii-wrap')
         if (wrap) {
           wrap.classList.remove('hidden')

@@ -232,6 +232,7 @@
 
   function startAnalysisAsciiAnimation() {
     if (analysisAsciiTimer != null) return
+    if (window.matchMedia('(max-width: 760px)').matches) return
     const wrap = document.getElementById('ph-ascii-wrap')
     if (wrap) {
       wrap.classList.remove('hidden')

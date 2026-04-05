@@ -1,8 +1,10 @@
 (function () {
   'use strict';
 
-  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  if (reduceMotion.matches) return;
+  /* Bypass UA respecting prefers-reduced-motion for document scrolling (Chrome/Safari). */
+  if (document.documentElement && document.documentElement.style) {
+    document.documentElement.style.setProperty('scroll-behavior', 'smooth', 'important');
+  }
 
   function tag(el) {
     return el && el.tagName ? String(el.tagName).toLowerCase() : '';
@@ -26,28 +28,14 @@
     var items = [];
     var t = tag(el);
 
-    if (t === 'div' && el.classList.contains('site-header-inner')) {
-      var logo = el.querySelector('.site-logo');
-      if (logo) items.push(logo);
-      var nav = el.querySelector('.site-nav');
-      if (nav) {
-        var links = nav.querySelectorAll('a');
-        for (var i = 0; i < links.length; i++) items.push(links[i]);
-      }
-      return items;
-    }
-
-    if (t === 'div' && el.classList.contains('landing-intro')) {
-      var col = el.querySelector('.hero-text-column');
+    if (t === 'div' && el.classList.contains('landing-hero-block')) {
+      var col = el.querySelector('.landing-intro .hero-text-column');
       if (col) {
         var ch = col.children;
         for (var j = 0; j < ch.length; j++) items.push(ch[j]);
       }
-      return items;
-    }
-
-    if (t === 'div' && el.classList.contains('demo-frame')) {
-      items.push(el);
+      var demo = el.querySelector('.demo-frame');
+      if (demo) items.push(demo);
       return items;
     }
 
@@ -129,7 +117,7 @@
     }
   }
 
-  /** Masonry column layout breaks DOM order; set review stagger from bottom → top (lowest card first). */
+  /** Masonry breaks DOM order; stagger reviews top → bottom (smallest Y first). */
   function partnersReviewStaggerBase(scope) {
     var n = 0;
     var intro = scope.querySelector('.partners-intro');
@@ -150,7 +138,7 @@
     arr.sort(function (a, b) {
       var ra = a.getBoundingClientRect();
       var rb = b.getBoundingClientRect();
-      var d = rb.bottom - ra.bottom;
+      var d = ra.top - rb.top;
       if (Math.abs(d) > 1) return d;
       return ra.left - rb.left;
     });
@@ -181,9 +169,7 @@
   }
 
   var SELECTORS = [
-    '.site-header-inner',
-    '.landing-intro',
-    '.demo-frame',
+    '.landing-hero-block',
     'section.workspace-section',
     'section.flow-section',
     'section.partners-section',

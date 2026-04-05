@@ -6,7 +6,6 @@
   var sticky = track ? track.querySelector('.flow-pin-sticky') : null;
   if (!track || !scroller || !sticky) return;
 
-  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   var narrow = window.matchMedia('(max-width: 760px)');
   var headerEl = document.querySelector('.site-header');
   var lastScrollerH = 0;
@@ -21,7 +20,7 @@
   }
 
   function pinActive() {
-    return !reduced.matches && !narrow.matches;
+    return !narrow.matches;
   }
 
   function sizeListViewport() {
@@ -131,7 +130,6 @@
   }, { passive: true });
 
   window.addEventListener('resize', fullSync);
-  reduced.addEventListener('change', reset);
   narrow.addEventListener('change', reset);
 
   reset();
