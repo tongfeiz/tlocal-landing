@@ -7,7 +7,7 @@
   /* Same inset as product-demo-animation .page-demo (outer margins to the demo card) */
   --demo-edge: max(16px, 2vmin);
   --demo-inner-max: 1100px;
-  /** Uniform scale for embed (layout inside iframe unchanged; only the painted size shrinks) */
+  /** Column / header cap = inner max × this (keeps nav aligned with scaled demo width) */
   --demo-scale: 0.93;
   --demo-iframe-h: min(704px, 92vh);
 }
@@ -995,20 +995,24 @@ h2.section-title {
 }
 
 /*
- * Border + radius live on .demo-zoom-viewport inside the iframe.
- * scale() keeps internal layout identical; negative margin collapses the 20% layout gap below the iframe.
+ * Demo iframe: fixed desktop layout width (--demo-inner-max) so embed-demo matches desktop CSS
+ * (min-width: 900px workspace, no max-width: 760px rules). Uniform scale to column width via cqw.
  */
 .demo-frame {
   background: transparent;
   border-radius: 0;
   overflow: hidden;
+  touch-action: pan-y pinch-zoom;
 }
 
 .demo-scale-wrap {
+  container-type: inline-size;
+  --demo-embed-scale: min(1, calc(100cqw / var(--demo-inner-max)));
   display: block;
   width: 100%;
   overflow: hidden;
   position: relative;
+  touch-action: pan-y pinch-zoom;
 }
 
 /*
@@ -1023,21 +1027,22 @@ h2.section-title {
   right: 0;
   bottom: 0;
   z-index: 1;
-  touch-action: pan-y pinch-zoom;
+  /* auto: let the browser assign scrolling to the nearest scrollable ancestor (the document) */
+  touch-action: auto;
   pointer-events: auto;
   cursor: default;
 }
 
 .demo-scale-wrap iframe {
   display: block;
-  width: calc(100% / var(--demo-scale));
+  width: var(--demo-inner-max);
   max-width: none;
   height: var(--demo-iframe-h);
   border: 0;
-  transform: scale(var(--demo-scale));
+  transform: scale(var(--demo-embed-scale));
   transform-origin: top left;
   /* Collapse layout gap: transform doesn’t shrink the box, so pull up by (1 − scale) × height */
-  margin-bottom: calc((var(--demo-scale) - 1) * var(--demo-iframe-h));
+  margin-bottom: calc((var(--demo-embed-scale) - 1) * var(--demo-iframe-h));
   /* Block interaction with embedded demo (scroll/clicks); kiosk behavior also set inside embed */
   pointer-events: none;
 }
