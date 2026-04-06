@@ -42,6 +42,8 @@
           <div class="demo-frame">
             <div class="demo-scale-wrap">
               <iframe src="embed-demo.html" title="TLocal product demo" loading="lazy"></iframe>
+              <!-- Captures touch on the parent page so mobile scroll works (iframe embed is non-scrollable). -->
+              <div class="demo-scroll-proxy" aria-hidden="true"></div>
             </div>
           </div>
         </div>

@@ -1008,6 +1008,24 @@ h2.section-title {
   display: block;
   width: 100%;
   overflow: hidden;
+  position: relative;
+}
+
+/*
+ * Sits above the iframe in the landing document so pan gestures scroll the page.
+ * The embed sets touch-action: none (kiosk); without this layer, mobile touches hit the iframe
+ * and the outer page does not scroll—like scrolling a non-interactive video, we want the page to move.
+ */
+.demo-scroll-proxy {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  touch-action: pan-y pinch-zoom;
+  pointer-events: auto;
+  cursor: default;
 }
 
 .demo-scale-wrap iframe {
