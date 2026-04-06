@@ -1,49 +1,4 @@
 ;(function () {
-  /**
-   * Landing iframe: many mobile browsers trap scroll in the iframe. Forward vertical drags to
-   * `parent.scrollBy` so the landing page scrolls; kiosk CSS keeps the demo non-scrollable.
-   * Use the parent viewport for the breakpoint (iframe inner width is inflated for layout scale).
-   */
-  function initMobileEmbedForwardScrollToParent() {
-    if (!document.documentElement.classList.contains('embed-demo-page')) return
-
-    function bridgeNarrow() {
-      try {
-        const p = window.parent
-        if (p && p !== window && typeof p.matchMedia === 'function') {
-          return p.matchMedia('(max-width: 760px)').matches
-        }
-      } catch (_) {}
-      return window.matchMedia('(max-width: 760px)').matches
-    }
-
-    let lastY = null
-    function onStart(e) {
-      if (!bridgeNarrow()) return
-      if (e.touches.length === 1) lastY = e.touches[0].clientY
-      else lastY = null
-    }
-    function onMove(e) {
-      if (!bridgeNarrow() || lastY == null || e.touches.length !== 1) return
-      const y = e.touches[0].clientY
-      const dy = lastY - y
-      lastY = y
-      try {
-        const p = window.parent
-        if (p && p !== window && typeof p.scrollBy === 'function') p.scrollBy(0, dy)
-      } catch (_) {}
-    }
-    function onEnd() {
-      lastY = null
-    }
-    document.addEventListener('touchstart', onStart, { passive: true })
-    document.addEventListener('touchmove', onMove, { passive: true })
-    document.addEventListener('touchend', onEnd, { passive: true })
-    document.addEventListener('touchcancel', onEnd, { passive: true })
-  }
-
-  initMobileEmbedForwardScrollToParent()
-
   const opts =
     typeof window !== 'undefined' && window.TLOCAL_DEMO_OPTS
       ? window.TLOCAL_DEMO_OPTS

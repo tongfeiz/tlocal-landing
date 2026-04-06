@@ -86,7 +86,7 @@
       var b = BLOB_PALETTE_B[i]
       var hue = lerp(a[0], b[0], t)
       /* Mid-scroll hue bump so the transition feels more iridescent */
-      hue += Math.sin(t * Math.PI) * 12
+      hue += Math.sin(t * Math.PI) * 40
       hue = ((hue % 360) + 360) % 360
       out.push([hue, lerp(a[1], b[1], t), lerp(a[2], b[2], t)])
     }
@@ -151,7 +151,7 @@
 
     /* Base shifts cool lavender → warm shell as you scroll */
     var baseHue = lerp(268, 32, p)
-    var baseSat = lerp(16, 28, p)
+    var baseSat = lerp(106, 28, p)
     var baseLight = lerp(96.4, 95.8, p)
     ctx.fillStyle = hsla(baseHue, baseSat, baseLight, 1)
     ctx.fillRect(0, 0, w, h)

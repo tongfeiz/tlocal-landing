@@ -28,9 +28,9 @@
   var TEXT_FILL = 'rgba(202, 202, 202, 0.97)'
 
   var CHARS_EN =
-    'textlocalization'
+    'TEXT LOCALIZATION TEXT LOCALIZATION'
   var CHARS_ZH =
-    '翻译本地化语言文本字幕视频内容团队工作流协作界面时间码审查队列管理员进度状态本地化全球语系汉字简体繁体'
+    '翻译 本地 化语言文 本字幕视 频内 容团队工 作流协作'
   var CHARS_HI =
     'कखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसहक्षत्रज्ञड़ढ़अआइईउऊएऐओऔऋानिीुूेैोौंः'
 
@@ -116,13 +116,14 @@
 
   /** Uniform rectangular mesh: each cell is one glyph; neighbors at N/E/S/W. */
   function gridDimensions(w, h) {
-    var target = Math.max(12, Math.min(20, Math.floor(Math.min(w, h) / 19)))
-    var cols = Math.max(6, Math.floor(w / target))
-    var rows = Math.max(5, Math.floor(h / target))
-    if (cols * rows > 2200) {
-      var s = Math.sqrt((cols * rows) / 2200)
-      cols = Math.max(6, Math.floor(cols / s))
-      rows = Math.max(5, Math.floor(rows / s))
+    /* Larger cells (~14px min target) = bigger web, fewer overlaps vs font size */
+    var target = Math.max(14, Math.min(24, Math.floor(Math.min(w, h) / 14)))
+    var cols = Math.max(5, Math.floor(w / target))
+    var rows = Math.max(4, Math.floor(h / target))
+    if (cols * rows > 1800) {
+      var s = Math.sqrt((cols * rows) / 1800)
+      cols = Math.max(5, Math.floor(cols / s))
+      rows = Math.max(4, Math.floor(rows / s))
     }
     return { cols: cols, rows: rows }
   }
@@ -183,14 +184,15 @@
     var rows = gr.rows
     var cellW = w / cols
     var cellH = h / rows
-    var vertScale = h * 0.125
+    /* Lower swell projection so glyphs stay inside a shorter canvas */
+    var vertScale = h * 0.078
 
     ctx.clearRect(0, 0, w, h)
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = TEXT_FILL
 
-    var fontPx = Math.max(9, Math.min(cellW, cellH) * 0.52)
+    var fontPx = Math.max(12, Math.min(cellW, cellH) * 0.26)
     ctx.font =
       '500 ' +
       fontPx +
@@ -206,9 +208,9 @@
         var elev = oceanHeight(u, v, t, P)
         /* Faint current-like drift (top-down “water” sliding past the grid) */
         var driftX =
-          Math.sin(u * Math.PI * 5 + flowT) * Math.cos(v * Math.PI * 3.2 + flowT * 0.7) * cellW * 0.045
+          Math.sin(u * Math.PI * 5 + flowT) * Math.cos(v * Math.PI * 3.2 + flowT * 0.7) * cellW * 0.028
         var driftY =
-          Math.cos(u * Math.PI * 3.8 - flowT * 0.85) * Math.sin(v * Math.PI * 4.6 - flowT) * cellH * 0.038
+          Math.cos(u * Math.PI * 3.8 - flowT * 0.85) * Math.sin(v * Math.PI * 4.6 - flowT) * cellH * 0.024
         var sx = (i + 0.5) * cellW + driftX
         var sy = (j + 0.5) * cellH + driftY - elev * vertScale
         var depthScale = Math.max(0.86, Math.min(1.12, 1 + elev * 0.05))

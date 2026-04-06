@@ -621,11 +621,11 @@ h2.section-title {
   min-width: 0;
 }
 
-/* Character mesh: slightly shorter than 5:3; full width of the left column. */
+/* Character mesh: wide, modest height so the swell stays inside the frame. */
 .workspace-section .workspace-dot-grid-frame {
   width: 100%;
   margin: clamp(20px, 4vw, 32px) 0 0;
-  aspect-ratio: 5 / 2.68;
+  aspect-ratio: 5 / 2;
   position: relative;
   overflow: hidden;
   border-radius: 10px;
@@ -1022,16 +1022,6 @@ h2.section-title {
   margin-bottom: calc((var(--demo-scale) - 1) * var(--demo-iframe-h));
   /* Block interaction with embedded demo (scroll/clicks); kiosk behavior also set inside embed */
   pointer-events: none;
-}
-
-@media (max-width: 760px) {
-  /*
-   * Let touches hit the iframe document so pan-y + overscroll chaining (product-demo.css) can
-   * scroll the parent page; pointer-events: none breaks this on many mobile browsers.
-   */
-  .demo-scale-wrap iframe {
-    pointer-events: auto;
-  }
 }
 
 /* About, privacy, terms */
