@@ -7,7 +7,8 @@
  *   · PAGE_STEP_VIEWPORT — PageDown/Space step as fraction of viewport height
  *   · ENABLE_KEYBOARD_LERP — PageUp/PageDown/Space/Home/End (not arrow keys)
  *
- * Skips: iframes only. With prefers-reduced-motion, wheel stays native; hash jumps are instant.
+ * Skips: iframes only. Document lerp ignores prefers-reduced-motion (wheel, keys, hash) so macOS
+ * “Reduce motion” does not fall back to native/instant page scroll.
  * Loads after page-stagger.js so scroll-behavior can be forced to auto (site.css has smooth on html).
  */
 ;(function () {
@@ -35,8 +36,6 @@
 
   if (typeof window === 'undefined' || !window.requestAnimationFrame) return
   if (window.parent !== window) return
-
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)')
 
   var docEl = document.documentElement
 
@@ -79,18 +78,6 @@
   var targetY = getScrollY()
   var animating = false
   var rafId = 0
-  
-
-  var lerpK = reduce.matches ? 1 : LERP_FACTOR
-
-  function syncLerpKFromMotionPreference() {
-    lerpK = reduce.matches ? 1 : LERP_FACTOR
-  }
-  if (typeof reduce.addEventListener === 'function') {
-    reduce.addEventListener('change', syncLerpKFromMotionPreference)
-  } else if (typeof reduce.addListener === 'function') {
-    reduce.addListener(syncLerpKFromMotionPreference)
-  }
 
   function clampTarget() {
     var m = maxYAll()
@@ -113,7 +100,7 @@
       rafId = 0
       return
     }
-    scrollDocTo(y + diff * lerpK)
+    scrollDocTo(y + diff * LERP_FACTOR)
     rafId = window.requestAnimationFrame(step)
   }
 
@@ -126,7 +113,6 @@
   }
 
   function onWheel(e) {
-    if (reduce.matches) return
     targetY += e.deltaY * WHEEL_MULTIPLIER
     clampTarget()
     e.preventDefault()
@@ -162,7 +148,7 @@
     return false
   }
 
-  if (ENABLE_KEYBOARD_LERP && !reduce.matches) {
+  if (ENABLE_KEYBOARD_LERP) {
     document.addEventListener(
       'keydown',
       function (e) {
@@ -234,11 +220,7 @@
       } else {
         window.location.hash = hash
       }
-      if (reduce.matches) {
-        scrollDocTo(targetY)
-      } else {
-        kick()
-      }
+      kick()
     },
     true,
   )
@@ -256,7 +238,7 @@
     if (y == null) return
     targetY = y
     clampTarget()
-    if (instant || reduce.matches) {
+    if (instant) {
       scrollDocTo(targetY)
     } else {
       kick()
